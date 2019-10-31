@@ -44,17 +44,17 @@ for further details about setting up examples and options please see the include
 
 If you use the tool, please refer to it in your work by citing the references
 
-[4] P. D. Ledger and W. R. B. Lionheart, The spectral properties of the magnetic polarizability tensor for metallic object characterisation, Math Meth Appl Sci., 2019, \texttt{doi:10.1002/mma.5830}
+[4] P. D. Ledger and W. R. B. Lionheart, The spectral properties of the magnetic polarizability tensor for metallic object characterisation, Math Meth Appl Sci., 2019, doi:10.1002/mma.5830
 
-[5] P. D. Ledger and W. R. B. Lionheart,  An explicit formula for the magnetic polarizability tensor for object characterization, {IEEE} Trans Geosci Remote Sens., 56(6), 3520-3533, 2018.
+[5] P. D. Ledger and W. R. B. Lionheart,  An explicit formula for the magnetic polarizability tensor for object characterization, IEEE Trans Geosci Remote Sens., 56(6), 3520-3533, 2018.
 
 [6] B. Wilson and P. D. Ledger, Efficient numerical schemes for the computation of the magnetic polarizability tensor, In preparation, 2019.
 
 as well as those of NGSolve:
 
-[1]J. Sch\"oberl, C++11 Implementation of Finite Elements in NGSolve, ASC Report 30/2014, Institute for Analysis and Scientific Computing, Vienna University of Technology, 2014.
+[1]J. Schoberl, C++11 Implementation of Finite Elements in NGSolve, ASC Report 30/2014, Institute for Analysis and Scientific Computing, Vienna University of Technology, 2014.
 
 [2] S. Zaglmayr, High Order Finite Elements for Electromagnetic Field Computation, PhD Thesis, Johannes Kepler University Linz, 2006 
 
-[3] J. {Sch\"oberl}, NETGEN - An advancing front 2D/3D-mesh generator based on abstract rules, Computing and Visualization in Science, 1(1), 41-52, 1997.
+[3] J. Schoberl, NETGEN - An advancing front 2D/3D-mesh generator based on abstract rules, Computing and Visualization in Science, 1(1), 41-52, 1997.
 
