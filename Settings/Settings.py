@@ -38,7 +38,7 @@ def SaverSettings():
 def SolverParameters():
     #Parameters associated with solving the problem can edit this
     #preconditioner to be used
-    Solver = "local"
+    Solver = "bddc"
     #(string) "bddc"/"local"
     
     #regularisation
@@ -46,7 +46,7 @@ def SolverParameters():
     #(float) regularisation to be used in the problem
     
     #Maximum iterations to be used in solving the problem
-    Maxsteps = 2000
+    Maxsteps = 5000
     #(int) maximum number of iterations to be used in solving the problem
     #the bddc will converge in most cases in less than 200 iterations
     #the local will take more
