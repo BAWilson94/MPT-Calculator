@@ -40,6 +40,8 @@ python3 main
 
 for further details about setting up examples and options please see the included documentation MPT-Calculator.pdf.
 
+Note with current version of NGSolve 6.2.1908 there is an issue with the BDDC preconditioner when applied on Ubuntu 18.04 and instead the default preconditioner in Settings/Settings.py should be changed to the local preconditioner. This can be done by setting Solver="local" on line 41. Under MAC OS 10.13.6 and the current version of NGSolve no change is required.
+
 #Referencing
 
 If you use the tool, please refer to it in your work by citing the references
