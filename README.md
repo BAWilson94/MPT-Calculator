@@ -36,11 +36,17 @@ The code has been tested on version 6.2.1905 of NGSolve and version 3.7.1 of Pyt
 
 The code is run using 
 
-python3 main
+python3 main.py
 
 for further details about setting up examples and options please see the included documentation MPT-Calculator.pdf.
 
-Note with current version of NGSolve 6.2.1908 there is an issue with the BDDC preconditioner when applied on Ubuntu 18.04 and instead the default preconditioner in Settings/Settings.py should be changed to the local preconditioner. This can be done by setting Solver="local" on line 41. Under MAC OS 10.13.6 and the current version of NGSolve no change is required.
+Note before running the code on Linux the user is required to enter the following lines in the command line
+
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export MKL_THREADING_LAYER=sequential
+
+or alternatively edit their .bashrc to include this. 
 
 #Referencing
 
@@ -50,7 +56,7 @@ If you use the tool, please refer to it in your work by citing the references
 
 [5] P. D. Ledger and W. R. B. Lionheart,  An explicit formula for the magnetic polarizability tensor for object characterization, IEEE Trans Geosci Remote Sens., 56(6), 3520-3533, 2018.
 
-[6] B. Wilson and P. D. Ledger, Efficient numerical schemes for the computation of the magnetic polarizability tensor, In preparation, 2019.
+[6] B. A. Wilson and P. D. Ledger, Efficient numerical schemes for the computation of the magnetic polarizability tensor, In preparation, 2019.
 
 as well as those of NGSolve:
 

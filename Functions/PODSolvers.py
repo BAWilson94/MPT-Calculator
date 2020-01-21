@@ -25,7 +25,8 @@ from Settings import SolverParameters
 #Function definition for a frequency sweep which uses the PODP method
 #Outputs -An array of Tensors as a numpy array
 #        -An array of Eigen values as a numpy array
-def PODSweep(Object,Order,alpha,inorout,mur,sig,Array,PODArray,PODTol,PlotPod):
+#def PODSweep(Object,Order,alpha,inorout,mur,sig,Array,PODArray,PODTol,PlotPod):
+def PODSweep(Object,Order,alpha,inorout,mur,sig,Array,PODArray,PODTol,PlotPod,sweepname,SavePOD,PODErrorBars):
     Object = Object[:-4]+".vol"
     #Set up the Solver Parameters
     Solver,epsi,Maxsteps,Tolerance = SolverParameters()
@@ -55,6 +56,7 @@ def PODSweep(Object,Order,alpha,inorout,mur,sig,Array,PODArray,PODTol,PlotPod):
     
     #Set up how the tensor and eigenvalues will be stored
     N0=np.zeros([3,3])
+    PODN0Errors = np.zeros([3,1])
     R=np.zeros([3,3])
     I=np.zeros([3,3])
     TensorArray=np.zeros([NumberofFrequencies,9], dtype=complex)
@@ -96,6 +98,8 @@ def PODSweep(Object,Order,alpha,inorout,mur,sig,Array,PODArray,PODTol,PlotPod):
             Theta0j.vec.FV().NumPy()[:] = Theta0Sol[:,j]
             if i==j:
                 N0[i,j] = (alpha**3)*(VolConstant+(1/4)*(Integrate(mu**(-1)*(InnerProduct(curl(Theta0i),curl(Theta0j))),mesh)))
+                if PODErrorBars==True:
+                    PODN0Errors[i,0] = (Integrate(inout*InnerProduct(Theta0i,Theta0j),mesh))**(1/2)
             else:
                 N0[i,j] = (alpha**3/4)*(Integrate(mu**(-1)*(InnerProduct(curl(Theta0i),curl(Theta0j))),mesh))
     
@@ -110,9 +114,49 @@ def PODSweep(Object,Order,alpha,inorout,mur,sig,Array,PODArray,PODTol,PlotPod):
 
     #Setup the finite element space
     dom_nrs_metal = [0 if mat == "air" else 1 for mat in mesh.GetMaterials()]
+    fes0 = HCurl(mesh, order=0, dirichlet="outer", complex=True, gradientdomains=dom_nrs_metal)
     fes2 = HCurl(mesh, order=Order, dirichlet="outer", complex=True, gradientdomains=dom_nrs_metal)
+    fes3 = HCurl(mesh, order=Order, dirichlet="outer", gradientdomains=dom_nrs_metal)
     #Count the number of degrees of freedom
     ndof2 = fes2.ndof
+    
+    #Work out alphaLB if bounds are required
+    if PODErrorBars==True:
+        Omega = Array[0]
+        u,v = fes3.TnT()
+        amax = BilinearForm(fes3)
+        amax += (mu**(-1))*curl(u)*curl(v)*dx
+        amax += (1-inout)*epsi*u*v*dx
+        amax += inout*sigma*(alpha**2)*Mu0*Omega*u*v*dx
+
+        m = BilinearForm(fes3)
+        m += u*v*dx
+
+        apre = BilinearForm(fes3)
+        apre += curl(u)*curl(v)*dx + u*v*dx
+        #pre = Preconditioner(apre, "direct", inverse="sparsecholesky")
+        pre = Preconditioner(amax, "bddc")
+    
+        with TaskManager():
+            amax.Assemble()
+            m.Assemble()
+            apre.Assemble()
+
+            # build gradient matrix as sparse matrix (and corresponding scalar FESpace)
+            gradmat, fesh1 = fes3.CreateGradient()
+            gradmattrans = gradmat.CreateTranspose() # transpose sparse matrix
+            math1 = gradmattrans @ m.mat @ gradmat   # multiply matrices
+            math1[0,0] += 1     # fix the 1-dim kernel
+            invh1 = math1.Inverse(inverse="sparsecholesky")
+            
+            # build the Poisson projector with operator Algebra:
+            proj = IdentityMatrix() - gradmat @ invh1 @ gradmattrans @ m.mat
+            projpre = proj @ pre.mat
+            evals, evecs = solvers.PINVIT(amax.mat, m.mat, pre=projpre, num=1, maxit=50)
+
+        alphaLB = evals[0]
+    else:
+        alphaLB = False
     
     #Define the vectors for the right hand side
     xivec = [ CoefficientFunction( (0,-z,y) ), CoefficientFunction( (z,0,-x) ), CoefficientFunction( (-y,x,0) ) ]
@@ -160,29 +204,30 @@ def PODSweep(Object,Order,alpha,inorout,mur,sig,Array,PODArray,PODTol,PlotPod):
 #POD
 #This function uses the snapshots from the previous section to calulate
 #solution vectors for the points in the desired frequency sweep
-    W1,W2,W3 = PODP(mesh,fes,fes2,Theta0Sol,xivec,alpha,sigma,mu,inout,epsi,Theta1E1Sol,Theta1E2Sol,Theta1E3Sol,PODArray,Array,PODTol)
-
-
-
-#########################################################################
-#Calculate the tensors
-#Calculate the tensors and eigenvalues which will be used in the sweep
-    
-    #Calculate tensors for each of the frequencies in the array
-    for i,Omega in enumerate(Array):
-        nu = Omega*Mu0*(alpha**2)
-        R,I = MPTCalculator(mesh,fes,fes2,W1[:,i],W2[:,i],W3[:,i],Theta0Sol,xivec,alpha,mu,sigma,inout,nu,i+1,NumberofFrequencies)
-        TensorArray[i,:] = (N0+R+1j*I).flatten()
-        RealEigenvalues[i,:] = np.sort(np.linalg.eigvals(N0+R))
-        ImaginaryEigenvalues[i,:] = np.sort(np.linalg.eigvals(I))
-    print(' tensors calculated        ',)
-    print(' frequency sweep complete     ')
-    EigenValues=RealEigenvalues+1j*ImaginaryEigenvalues
-    
-    if PlotPod==True:
-        return TensorArray, EigenValues, N0, PODTensors, PODEigenValues, numelements
+    if PODErrorBars==True:
+        RealTensors,ImagTensors,ErrorTensors = PODP(mesh,fes0,fes,fes2,Theta0Sol,xivec,alpha,sigma,mu,inout,epsi,Theta1E1Sol,Theta1E2Sol,Theta1E3Sol,PODArray,Array,PODTol,PODN0Errors,alphaLB,PODErrorBars)
     else:
-        return TensorArray, EigenValues, N0, numelements
+        RealTensors,ImagTensors = PODP(mesh,fes0,fes,fes2,Theta0Sol,xivec,alpha,sigma,mu,inout,epsi,Theta1E1Sol,Theta1E2Sol,Theta1E3Sol,PODArray,Array,PODTol,PODN0Errors,alphaLB,PODErrorBars)
+    
+    #Add N0 to real tensors and find eigenvales
+    FN0 = N0.flatten()
+    for i in range(NumberofFrequencies):
+        TensorArray[i,:] = FN0+RealTensors[i,:]+1j*ImagTensors[i,:]
+        RealEigenvalues[i,:] = np.sort(np.linalg.eigvals(N0+np.reshape(RealTensors[i,:],(3,3))))
+        ImaginaryEigenvalues[i,:] = np.sort(np.linalg.eigvals(np.reshape(ImagTensors[i,:],(3,3))))
+    EigenValues = RealEigenvalues+1j*ImaginaryEigenvalues
+
+
+    if PlotPod==True:
+        if PODErrorBars==True:
+            return TensorArray, EigenValues, N0, PODTensors, PODEigenValues, numelements, ErrorTensors
+        else:
+            return TensorArray, EigenValues, N0, PODTensors, PODEigenValues, numelements
+    else:
+        if PODErrorBars==True:
+            return TensorArray, EigenValues, N0, numelements, ErrorTensors
+        else:
+            return TensorArray, EigenValues, N0, numelements
 
 
 
@@ -190,7 +235,8 @@ def PODSweep(Object,Order,alpha,inorout,mur,sig,Array,PODArray,PODTol,PlotPod):
 #Function definition for a frequency sweep which uses the PODP method in parallel
 #Outputs -An array of Tensors as a numpy array
 #        -An array of Eigen values as a numpy array
-def PODSweepMulti(Object,Order,alpha,inorout,mur,sig,Array,PODArray,PODTol,PlotPod,CPUs):
+#def PODSweepMulti(Object,Order,alpha,inorout,mur,sig,Array,PODArray,PODTol,PlotPod,CPUs):
+def PODSweepMulti(Object,Order,alpha,inorout,mur,sig,Array,PODArray,PODTol,PlotPod,CPUs,sweepname,SavePOD,PODErrorBars):
     Object = Object[:-4]+".vol"
     #Set up the Solver Parameters
     Solver,epsi,Maxsteps,Tolerance = SolverParameters()
@@ -220,6 +266,7 @@ def PODSweepMulti(Object,Order,alpha,inorout,mur,sig,Array,PODArray,PODTol,PlotP
     
     #Set up how the tensor and eigenvalues will be stored
     N0=np.zeros([3,3])
+    PODN0Errors = np.zeros([3,1])
     TensorArray=np.zeros([NumberofFrequencies,9], dtype=complex)
     RealEigenvalues = np.zeros([NumberofFrequencies,3])
     ImaginaryEigenvalues = np.zeros([NumberofFrequencies,3])
@@ -271,6 +318,8 @@ def PODSweepMulti(Object,Order,alpha,inorout,mur,sig,Array,PODArray,PODTol,PlotP
             Theta0j.vec.FV().NumPy()[:] = Theta0Sol[:,j]
             if i==j:
                 N0[i,j] = (alpha**3)*(VolConstant+(1/4)*(Integrate(mu**(-1)*(InnerProduct(curl(Theta0i),curl(Theta0j))),mesh)))
+                if PODErrorBars==True:
+                    PODN0Errors[i,0] = (Integrate(inout*InnerProduct(Theta0i,Theta0j),mesh))**(1/2)
             else:
                 N0[i,j] = (alpha**3/4)*(Integrate(mu**(-1)*(InnerProduct(curl(Theta0i),curl(Theta0j))),mesh))
 
@@ -281,11 +330,54 @@ def PODSweepMulti(Object,Order,alpha,inorout,mur,sig,Array,PODArray,PODTol,PlotP
 #This section solves the Theta1 problem to calculate the solution vectors
 #of the snapshots
 
-    #Setup the finite element space
+    #Setup the finite element spaces
     dom_nrs_metal = [0 if mat == "air" else 1 for mat in mesh.GetMaterials()]
+    fes0 = HCurl(mesh, order=0, dirichlet="outer", complex=True, gradientdomains=dom_nrs_metal)
     fes2 = HCurl(mesh, order=Order, dirichlet="outer", complex=True, gradientdomains=dom_nrs_metal)
+    fes3 = HCurl(mesh, order=Order, dirichlet="outer", gradientdomains=dom_nrs_metal)
     #Count the number of degrees of freedom
     ndof2 = fes2.ndof
+    
+    
+    #Work out alphaLB if bounds are required
+    if PODErrorBars==True:
+        Omega = Array[0]
+        u,v = fes3.TnT()
+        amax = BilinearForm(fes3)
+        amax += (mu**(-1))*curl(u)*curl(v)*dx
+        amax += (1-inout)*epsi*u*v*dx
+        amax += inout*sigma*(alpha**2)*Mu0*Omega*u*v*dx
+
+        m = BilinearForm(fes3)
+        m += u*v*dx
+
+        apre = BilinearForm(fes3)
+        apre += curl(u)*curl(v)*dx + u*v*dx
+        #pre = Preconditioner(apre, "direct", inverse="sparsecholesky")
+        pre = Preconditioner(amax, "bddc")
+    
+        with TaskManager():
+            amax.Assemble()
+            m.Assemble()
+            apre.Assemble()
+
+            # build gradient matrix as sparse matrix (and corresponding scalar FESpace)
+            gradmat, fesh1 = fes3.CreateGradient()
+            gradmattrans = gradmat.CreateTranspose() # transpose sparse matrix
+            math1 = gradmattrans @ m.mat @ gradmat   # multiply matrices
+            math1[0,0] += 1     # fix the 1-dim kernel
+            invh1 = math1.Inverse(inverse="sparsecholesky")
+            
+            # build the Poisson projector with operator Algebra:
+            proj = IdentityMatrix() - gradmat @ invh1 @ gradmattrans @ m.mat
+            projpre = proj @ pre.mat
+            evals, evecs = solvers.PINVIT(amax.mat, m.mat, pre=projpre, num=1, maxit=50)
+
+        alphaLB = evals[0]
+    else:
+        alphaLB = False
+    
+    
     
     #Define the vectors for the right hand side
     xivec = [ CoefficientFunction( (0,-z,y) ), CoefficientFunction( (z,0,-x) ), CoefficientFunction( (-y,x,0) ) ]
@@ -360,36 +452,27 @@ def PODSweepMulti(Object,Order,alpha,inorout,mur,sig,Array,PODArray,PODTol,PlotP
 #POD
 #This function uses the snapshots from the previous section to calulate
 #solution vectors for the points in the desired frequency sweep
-    W1,W2,W3 = PODPMulti(mesh,fes,fes2,Theta0Sol,xivec,alpha,sigma,mu,inout,epsi,Theta1E1Sol,Theta1E2Sol,Theta1E3Sol,PODArray,Array,PODTol,CPUs)
-
-
-
-#########################################################################
-#Calculate the tensors
-#Calculate the tensors and eigenvalues which will be used in the sweep
-    
-    #Create the inputs for the calculation of the tensors
-    Runlist = []
-    counter = manager.Value('i', 0)
-    for i,Omega in enumerate(Array):
-        nu = Omega*Mu0*(alpha**2)
-        NewInput = (mesh,fes,fes2,W1[:,i],W2[:,i],W3[:,i],Theta0Sol,xivec,alpha,mu,sigma,inout,nu,counter,NumberofFrequencies)
-        Runlist.append(NewInput)
-    
-    #Run in parallel
-    with multiprocessing.Pool(CPUs) as pool:
-        Output = pool.starmap(MPTCalculator, Runlist)
-    print(' calculated tensors             ')
-    print(' frequency sweep complete')
-    #Unpack the outputs
-    for i, OutputNumber in enumerate(Output):
-        TensorArray[i,:]=(N0+OutputNumber[0]+1j*OutputNumber[1]).flatten()
-        RealEigenvalues[i,:]=np.sort(np.linalg.eigvals(N0+OutputNumber[0]))
-        ImaginaryEigenvalues[i,:]=np.sort(np.linalg.eigvals(OutputNumber[1]))
-    
-    EigenValues=RealEigenvalues+1j*ImaginaryEigenvalues
-    
-    if PlotPod==True:
-        return TensorArray, EigenValues, N0, PODTensors, PODEigenValues, numelements
+    if PODErrorBars==True:
+        RealTensors,ImagTensors,ErrorTensors = PODP(mesh,fes0,fes,fes2,Theta0Sol,xivec,alpha,sigma,mu,inout,epsi,Theta1E1Sol,Theta1E2Sol,Theta1E3Sol,PODArray,Array,PODTol,PODN0Errors,alphaLB,PODErrorBars)
     else:
-        return TensorArray, EigenValues, N0, numelements
+        RealTensors,ImagTensors = PODP(mesh,fes0,fes,fes2,Theta0Sol,xivec,alpha,sigma,mu,inout,epsi,Theta1E1Sol,Theta1E2Sol,Theta1E3Sol,PODArray,Array,PODTol,PODN0Errors,alphaLB,PODErrorBars)
+    
+    #Add N0 to real tensors and find eigenvales
+    FN0 = N0.flatten()
+    for i in range(NumberofFrequencies):
+        TensorArray[i,:] = FN0+RealTensors[i,:]+1j*ImagTensors[i,:]
+        RealEigenvalues[i,:] = np.sort(np.linalg.eigvals(N0+np.reshape(RealTensors[i,:],(3,3))))
+        ImaginaryEigenvalues[i,:] = np.sort(np.linalg.eigvals(np.reshape(ImagTensors[i,:],(3,3))))
+    EigenValues = RealEigenvalues+1j*ImaginaryEigenvalues
+
+
+    if PlotPod==True:
+        if PODErrorBars==True:
+            return TensorArray, EigenValues, N0, PODTensors, PODEigenValues, numelements, ErrorTensors
+        else:
+            return TensorArray, EigenValues, N0, PODTensors, PODEigenValues, numelements
+    else:
+        if PODErrorBars==True:
+            return TensorArray, EigenValues, N0, numelements, ErrorTensors
+        else:
+            return TensorArray, EigenValues, N0, numelements

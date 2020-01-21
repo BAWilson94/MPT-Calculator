@@ -52,7 +52,7 @@ def PODEigPlotter(savename,Array,PODArray,EigenValues,PODEigenValues):
     PYCOL=['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf']
     
     #Retrieve the settings for the plot
-    Title, Show, ETP, _, MLS, MMS, SLS, SMS = PlotterSettings()
+    Title, Show, ETP, _, MLS, MMS, SLS, SMS, _, _ = PlotterSettings()
     
     #Plot the real graph
     fig, ax = plt.subplots()
@@ -145,7 +145,7 @@ def EigPlotter(savename,Array,EigenValues):
     PYCOL=['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf']
     
     #Retrieve the settings for the plot
-    Title, Show, ETP, _, MLS, MMS, _, _ = PlotterSettings()
+    Title, Show, ETP, _, MLS, MMS, _, _, _, _ = PlotterSettings()
     
     #Plot the graph
     fig, ax = plt.subplots()
@@ -225,7 +225,7 @@ def PODTensorPlotter(savename,Array,PODArray,Values,PODValues):
     PYCOL=['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf']
     
     #Retrieve the settings for the plot
-    Title, Show, _, TTP,MLS, MMS, SLS, SMS = PlotterSettings()
+    Title, Show, _, TTP,MLS, MMS, SLS, SMS< _, _ = PlotterSettings()
     
     #Plot the graph
     fig, ax = plt.subplots()
@@ -336,7 +336,7 @@ def TensorPlotter(savename,Array,Values):
     PYCOL=['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf']
     
     #Retrieve the settings for the plot
-    Title, Show, _, TTP, MLS, MMS, _, _ = PlotterSettings()
+    Title, Show, _, TTP, MLS, MMS, _, _, _, _ = PlotterSettings()
     
     #Plot the graph
     fig, ax = plt.subplots()
@@ -408,6 +408,272 @@ def TensorPlotter(savename,Array,Values):
             names.append(r"Im($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Im($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$)")
     
     ax.legend(lines,names)
+    
+    #Save the graph
+    plt.savefig(savename+"ImaginaryTensorCoeficients.pdf")
+
+    
+    return Show
+
+
+
+def PODErrorPlotter(savename,Array,PODArray,Values,PODValues,Errors):
+    #Create a way to reference xkcd colours
+    PYCOL=['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf']
+    
+    #Retrieve the settings for the plot
+    Title, Show, _, TTP,MLS, MMS, SLS, SMS, EBLS, EBMS = PlotterSettings()
+    
+    #Plot the graph
+    fig, ax = plt.subplots()
+    
+    #Plot the mainlines
+    for i,line in enumerate(TTP):
+        if i==0:
+            #Plot main lines
+            lines = ax.plot(Array,Values[:,line-1].real,MLS,markersize=MMS,color=PYCOL[i])
+            #Plot bottom error bars
+            lines += ax.plot(Array,Values[:,line-1].real-Errors[:,line-1],EBLS,markersize=EBMS,color=PYCOL[i])
+        else:
+            #Plot main lines
+            lines += ax.plot(Array,Values[:,line-1].real,MLS,markersize=MMS,color=PYCOL[i])
+            #Plot bottom error bars
+            lines += ax.plot(Array,Values[:,line-1].real-Errors[:,line-1],EBLS,markersize=EBMS,color=PYCOL[i])
+    
+    #Plot the snapshots
+    for i,line in enumerate(TTP):
+        lines += ax.plot(PODArray,PODValues[:,line-1].real,SLS,markersize=SMS,color=PYCOL[i])
+        
+    #Plot the top error bars (we plot them seperatly for the legend order)
+    for i,line in enumerate(TTP):
+        lines += ax.plot(Array,Values[:,line-1].real+Errors[:,line-1],EBLS,markersize=EBMS,color=PYCOL[i])
+    
+    #Format the axes
+    plt.xscale('log')
+    ax.grid(True)
+    ax.yaxis.set_major_formatter(plt.FuncFormatter(TickFormatter))
+    plt.subplots_adjust(wspace=0.6, hspace=0.6, left=0.15, bottom=0.1, right=0.94, top=0.90)
+    
+    #Label the axes
+    plt.xlabel("Frequency (rad/s)")
+    plt.ylabel(r"$\mathcal{N}^0_{ij}+\mathcal{R}_{ij}$")
+    
+    if Title==True:
+        plt.title(r"Tensor coefficients of $\mathcal{N}^0+\mathcal{R}$")
+    
+    #Create the legend
+    names = []
+    CoefficientRef = ["11","12","13","22","23","33","21","31","_","32"]
+    for i,number in enumerate(TTP):
+        if number == 1 or number == 4 or number == 6:
+            names.append(r"Re($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)")
+            names.append(r"Re($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$) (Certificate Bound)")
+        else:
+            names.append(r"Re($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Re($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$)")
+            names.append(r"Re($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Re($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$) (Certificate Bound)")
+    
+    for i,number in enumerate(TTP):
+        if number == 1 or number == 4 or number == 6:
+            names.append(r"Re($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$) (Snapshot)")
+        else:
+            names.append(r"Re($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Re($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$) (Snapshot)")
+    
+    #Shrink the size of the legend if there are to many lines
+    if len(names)>12:
+        ax.legend(lines,names,prop={'size':5})
+    elif len(names)>6:
+        ax.legend(lines,names,prop={'size':8})
+    else:
+        ax.legend(lines,names)
+    
+    #Save the graph
+    plt.savefig(savename+"RealTensorCoeficients.pdf")
+    
+    
+    #Plot the imaginary graph
+    fig, ax = plt.subplots()
+    
+    #Plot the mainlines
+    for i,line in enumerate(TTP):
+        if i==0:
+            #Plot the main lines
+            lines = ax.plot(Array,Values[:,line-1].imag,MLS,markersize=MMS,color=PYCOL[i])
+            #Plot bottom error bars
+            lines += ax.plot(Array,Values[:,line-1].imag-Errors[:,line-1],EBLS,markersize=EBMS,color=PYCOL[i])
+        else:
+            #Plot the main lines
+            lines += ax.plot(Array,Values[:,line-1].imag,MLS,markersize=MMS,color=PYCOL[i])
+            #Plot bottom error bars
+            lines += ax.plot(Array,Values[:,line-1].imag-Errors[:,line-1],EBLS,markersize=EBMS,color=PYCOL[i])
+    
+    #Plot the snapshots
+    for i,line in enumerate(TTP):
+        lines += ax.plot(PODArray,PODValues[:,line-1].imag,SLS,markersize=SMS,color=PYCOL[i])
+        
+    #Plot the top error bars (we plot them seperatly for the legend order)
+    for i,line in enumerate(TTP):
+        lines += ax.plot(Array,Values[:,line-1].imag+Errors[:,line-1],EBLS,markersize=EBMS,color=PYCOL[i])
+    
+    
+    #Format the axes
+    plt.xscale('log')
+    ax.grid(True)
+    ax.yaxis.set_major_formatter(plt.FuncFormatter(TickFormatter))
+    plt.subplots_adjust(wspace=0.6, hspace=0.6, left=0.15, bottom=0.1, right=0.94, top=0.90)
+    
+    #Label the axes
+    plt.xlabel("Frequency (rad/s)")
+    plt.ylabel(r"$\mathcal{I}_{ij}$")
+    
+    if Title==True:
+        plt.title(r"Tensor coefficients of $\mathcal{I}$")
+    
+    #Create the legend
+    names = []
+    for i,number in enumerate(TTP):
+        if number == 1 or number == 4 or number == 6:
+            names.append(r"Im($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)")
+            names.append(r"Im($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$) (Certificate Bound)")
+        else:
+            names.append(r"Im($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Im($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$)")
+            names.append(r"Im($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Im($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$) (Certificate Bound)")
+    for i,number in enumerate(TTP):
+        if number == 1 or number == 4 or number == 6:
+            names.append(r"Im($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$) (Snapshot)")
+        else:
+            names.append(r"Im($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Re($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$) (Snapshot)")
+    
+    #Shrink the size of the legend if there are to many lines
+    if len(names)>12:
+        ax.legend(lines,names,prop={'size':5})
+    elif len(names)>6:
+        ax.legend(lines,names,prop={'size':8})
+    else:
+        ax.legend(lines,names)
+    
+    #Save the graph
+    plt.savefig(savename+"ImaginaryTensorCoeficients.pdf")
+
+    
+    return Show
+
+
+
+
+def ErrorPlotter(savename,Array,Values,Errors):
+    #Create a way to reference xkcd colours
+    PYCOL=['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf']
+    
+    #Retrieve the settings for the plot
+    Title, Show, _, TTP, MLS, MMS, _, _, EBLS, EBMS = PlotterSettings()
+    
+    #Plot the graph
+    fig, ax = plt.subplots()
+    
+    #Plot the mainlines
+    for i,line in enumerate(TTP):
+        if i==0:
+            #Plot main lines
+            lines = ax.plot(Array,Values[:,line-1].real,MLS,markersize=MMS,color=PYCOL[i])
+            #Plot bottom error bars
+            lines += ax.plot(Array,Values[:,line-1].real-Errors[:,line-1],EBLS,markersize=EBMS,color=PYCOL[i])
+        else:
+            #Plot main lines
+            lines += ax.plot(Array,Values[:,line-1].real,MLS,markersize=MMS,color=PYCOL[i])
+            #Plot bottom error bars
+            lines += ax.plot(Array,Values[:,line-1].real-Errors[:,line-1],EBLS,markersize=EBMS,color=PYCOL[i])
+        
+    #Plot the top error bars (we plot them seperatly for the legend order)
+    for i,line in enumerate(TTP):
+        lines += ax.plot(Array,Values[:,line-1].real+Errors[:,line-1],EBLS,markersize=EBMS,color=PYCOL[i])
+    
+    #Format the axes
+    plt.xscale('log')
+    ax.grid(True)
+    ax.yaxis.set_major_formatter(plt.FuncFormatter(TickFormatter))
+    plt.subplots_adjust(wspace=0.6, hspace=0.6, left=0.15, bottom=0.1, right=0.94, top=0.90)
+    
+    #Label the axes
+    plt.xlabel("Frequency (rad/s)")
+    plt.ylabel(r"$\mathcal{N}^0_{ij}+\mathcal{R}_{ij}$")
+    
+    if Title==True:
+        plt.title(r"Tensor coefficients of $\mathcal{N}^0+\mathcal{R}$")
+    
+    #Create the legend
+    names = []
+    CoefficientRef = ["11","12","13","22","23","33","21","31","_","32"]
+    for i,number in enumerate(TTP):
+        if number == 1 or number == 4 or number == 6:
+            names.append(r"Re($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)")
+            names.append(r"Re($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$) (Certificate Bound)")
+        else:
+            names.append(r"Re($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Re($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$)")
+            names.append(r"Re($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Re($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$) (Certificate Bound)")
+    
+    #Shrink the size of the legend if there are to many lines
+    if len(names)>=10:
+        ax.legend(lines,names,prop={'size':6})
+    elif len(names)>=6:
+        ax.legend(lines,names,prop={'size':8})
+    else:
+        ax.legend(lines,names)
+    
+    #Save the graph
+    plt.savefig(savename+"RealTensorCoeficients.pdf")
+    
+    
+    #Plot the imaginary graph
+    fig, ax = plt.subplots()
+    
+    #Plot the mainlines
+    for i,line in enumerate(TTP):
+        if i==0:
+            #Plot the main lines
+            lines = ax.plot(Array,Values[:,line-1].imag,MLS,markersize=MMS,color=PYCOL[i])
+            #Plot bottom error bars
+            lines += ax.plot(Array,Values[:,line-1].imag-Errors[:,line-1],EBLS,markersize=EBMS,color=PYCOL[i])
+        else:
+            #Plot the main lines
+            lines += ax.plot(Array,Values[:,line-1].imag,MLS,markersize=MMS,color=PYCOL[i])
+            #Plot bottom error bars
+            lines += ax.plot(Array,Values[:,line-1].imag-Errors[:,line-1],EBLS,markersize=EBMS,color=PYCOL[i])
+        
+    #Plot the top error bars (we plot them seperatly for the legend order)
+    for i,line in enumerate(TTP):
+        lines += ax.plot(Array,Values[:,line-1].imag+Errors[:,line-1],EBLS,markersize=EBMS,color=PYCOL[i])
+    
+    
+    #Format the axes
+    plt.xscale('log')
+    ax.grid(True)
+    ax.yaxis.set_major_formatter(plt.FuncFormatter(TickFormatter))
+    plt.subplots_adjust(wspace=0.6, hspace=0.6, left=0.15, bottom=0.1, right=0.94, top=0.90)
+    
+    #Label the axes
+    plt.xlabel("Frequency (rad/s)")
+    plt.ylabel(r"$\mathcal{I}_{ij}$")
+    
+    if Title==True:
+        plt.title(r"Tensor coefficients of $\mathcal{I}$")
+    
+    #Create the legend
+    names = []
+    for i,number in enumerate(TTP):
+        if number == 1 or number == 4 or number == 6:
+            names.append(r"Im($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)")
+            names.append(r"Im($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$) (Certificate Bound)")
+        else:
+            names.append(r"Im($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Im($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$)")
+            names.append(r"Im($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Im($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$) (Certificate Bound)")
+    
+    #Shrink the size of the legend if there are to many lines
+    if len(names)>=10:
+        ax.legend(lines,names,prop={'size':6})
+    elif len(names)>=6:
+        ax.legend(lines,names,prop={'size':8})
+    else:
+        ax.legend(lines,names)
     
     #Save the graph
     plt.savefig(savename+"ImaginaryTensorCoeficients.pdf")

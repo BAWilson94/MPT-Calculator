@@ -96,7 +96,7 @@ def SingleSave(Geometry, Omega, MPT, EigenValues, N0, elements, alpha, Order, Me
 
 
 
-def PODSave(Geometry, Array, TensorArray, EigenValues, N0, PODTensors, PODEigenValues, PODArray, PODTol, elements, alpha, Order, MeshSize, mur, sig):
+def PODSave(Geometry, Array, TensorArray, EigenValues, N0, PODTensors, PODEigenValues, PODArray, PODTol, elements, alpha, Order, MeshSize, mur, sig, ErrorTensors):
     
     #Find how the user wants the data to be saved
     FolderStructure = SaverSettings()
@@ -137,6 +137,12 @@ def PODSave(Geometry, Array, TensorArray, EigenValues, N0, PODTensors, PODEigenV
     PlottingPODTensors = np.zeros([PODPoints,6],dtype=complex)
     PlottingTensorArray = np.concatenate([np.concatenate([TensorArray[:,:3],TensorArray[:,4:6]],axis=1),TensorArray[:,8:9]],axis=1)
     PlottingPODTensors = np.concatenate([np.concatenate([PODTensors[:,:3],PODTensors[:,4:6]],axis=1),PODTensors[:,8:9]],axis=1)
+    try:
+        ErrorTensors[:,[1,3]] = ErrorTensors[:,[3,1]]
+        ErrorTensors[:,[2,4]] = ErrorTensors[:,[4,2]]
+        ErrorTensors[:,[4,5]] = ErrorTensors[:,[5,4]]
+    except:
+        pass
     
     
     #Define where to save the graphs
@@ -144,8 +150,25 @@ def PODSave(Geometry, Array, TensorArray, EigenValues, N0, PODTensors, PODEigenV
     
     #Plot the graphs
     Show = PODEigPlotter(savename,Array,PODArray,EigenValues,PODEigenValues)
-    Show = PODTensorPlotter(savename,Array,PODArray,PlottingTensorArray,PlottingPODTensors)
     
+    try:
+        if ErrorTensors==False:
+            Show = PODTensorPlotter(savename,Array,PODArray,PlottingTensorArray,PlottingPODTensors)
+    except:
+        Show = PODErrorPlotter(savename,Array,PODArray,PlottingTensorArray,PlottingPODTensors,ErrorTensors)
+        
+        #Change the format of the error bars to the format of the Tensors
+        Errors = np.zeros([Points,9])
+        Errors[:,0] = ErrorTensors[:,0]
+        Errors[:,1] = ErrorTensors[:,3]
+        Errors[:,2] = ErrorTensors[:,4]
+        Errors[:,3] = ErrorTensors[:,3]
+        Errors[:,4] = ErrorTensors[:,1]
+        Errors[:,5] = ErrorTensors[:,5]
+        Errors[:,6] = ErrorTensors[:,4]
+        Errors[:,7] = ErrorTensors[:,5]
+        Errors[:,8] = ErrorTensors[:,2]
+        np.savetxt("Results/"+sweepname+"/Data/ErrorBars.csv",Errors, delimiter=",")
     #plot the graph if required
     if Show==True:
         plt.show()
@@ -153,7 +176,7 @@ def PODSave(Geometry, Array, TensorArray, EigenValues, N0, PODTensors, PODEigenV
     return
 
 
-def FullSave(Geometry, Array, TensorArray, EigenValues, N0, Pod, PODArray, PODTol, elements, alpha, Order, MeshSize, mur, sig):
+def FullSave(Geometry, Array, TensorArray, EigenValues, N0, Pod, PODArray, PODTol, elements, alpha, Order, MeshSize, mur, sig, ErrorTensors):
     
     #Find how the user wants the data to be saved
     FolderStructure = SaverSettings()
@@ -194,15 +217,35 @@ def FullSave(Geometry, Array, TensorArray, EigenValues, N0, Pod, PODArray, PODTo
     #Format the tensor arrays so they can be plotted
     PlottingTensorArray = np.zeros([Points,6],dtype=complex)
     PlottingTensorArray = np.concatenate([np.concatenate([TensorArray[:,:3],TensorArray[:,4:6]],axis=1),TensorArray[:,8:9]],axis=1)
-    
+    try:
+        ErrorTensors[:,[1,3]] = ErrorTensors[:,[3,1]]
+        ErrorTensors[:,[2,4]] = ErrorTensors[:,[4,2]]
+        ErrorTensors[:,[4,5]] = ErrorTensors[:,[5,4]]
+    except:
+        pass
     
     #Define where to save the graphs
     savename = "Results/"+sweepname+"/Graphs/"
     
     #Plot the graphs
     Show = EigPlotter(savename,Array,EigenValues)
-    Show = TensorPlotter(savename,Array,PlottingTensorArray)
-    
+    try:
+        if ErrorTensors==False:
+            Show = TensorPlotter(savename,Array,PlottingTensorArray)
+    except:
+        Show = ErrorPlotter(savename,Array,PlottingTensorArray,ErrorTensors)
+        #Change the format of the error bars to the format of the Tensors
+        Errors = np.zeros([Points,9])
+        Errors[:,0] = ErrorTensors[:,0]
+        Errors[:,1] = ErrorTensors[:,3]
+        Errors[:,2] = ErrorTensors[:,4]
+        Errors[:,3] = ErrorTensors[:,3]
+        Errors[:,4] = ErrorTensors[:,1]
+        Errors[:,5] = ErrorTensors[:,5]
+        Errors[:,6] = ErrorTensors[:,4]
+        Errors[:,7] = ErrorTensors[:,5]
+        Errors[:,8] = ErrorTensors[:,2]
+        np.savetxt("Results/"+sweepname+"/Data/ErrorBars.csv",Errors, delimiter=",")
     #plot the graph if required
     if Show==True:
         plt.show()
@@ -210,7 +253,7 @@ def FullSave(Geometry, Array, TensorArray, EigenValues, N0, Pod, PODArray, PODTo
     return
     
 
-def FolderMaker(Geometry, Single, Array, Omega, Pod, PlotPod, PODArray, PODTol, alpha, Order, MeshSize, mur, sig):
+def FolderMaker(Geometry, Single, Array, Omega, Pod, PlotPod, PODArray, PODTol, alpha, Order, MeshSize, mur, sig, ErrorTensors):
     
     #Find how the user wants the data saved
     FolderStructure = SaverSettings()
@@ -271,8 +314,13 @@ def FolderMaker(Geometry, Single, Array, Omega, Pod, PlotPod, PODArray, PODTol, 
     if Single!=True:
         copyfile("Settings/PlotterSettings.py","Results/"+sweepname+"/PlotterSettings.py")
         copyfile("Functions/Plotters.py","Results/"+sweepname+"/Functions/Plotters.py")
-        if PlotPod==True and Pod==True:
-            copyfile("Functions/PODPlotEditor.py","Results/"+sweepname+"/PODPlotEditor.py")
+        if Pod==True:
+            if ErrorTensors==True:
+                copyfile("Functions/PlotEditorWithErrorBars.py","Results/"+sweepname+"/PlotEditorWithErrorBars.py")
+            if PlotPod==True:
+                copyfile("Functions/PODPlotEditor.py","Results/"+sweepname+"/PODPlotEditor.py")
+                if ErrorTensors!=False:
+                    copyfile("Functions/PODPlotEditorWithErrorBars.py","Results/"+sweepname+"/PODPlotEditorWithErrorBars.py")
         copyfile("Functions/PlotEditor.py","Results/"+sweepname+"/PlotEditor.py")
     copyfile("GeoFiles/"+Geometry,"Results/"+sweepname+"/Input_files/"+Geometry)
     copyfile("Settings/Settings.py","Results/"+sweepname+"/Input_files/Settings.py")

@@ -11,13 +11,17 @@ def DefaultSettings():
     #(int)
     
     #How many snapshots should be taken
-    PODPoints = 13
+    PODPoints = 21
     #(int)
     
     #Tolerance to be used in the TSVD
-    PODTol = 10**-4
+    PODTol = 10**-6
     #(float)
-    return CPUs,PODPoints,PODTol
+    
+    #Produce certificate bounds for POD outputs
+    PODErrorBars = True
+    #(boolean)
+    return CPUs,PODPoints,PODTol,PODErrorBars
     
 
 
@@ -46,7 +50,7 @@ def SolverParameters():
     #(float) regularisation to be used in the problem
     
     #Maximum iterations to be used in solving the problem
-    Maxsteps = 5000
+    Maxsteps = 1500
     #(int) maximum number of iterations to be used in solving the problem
     #the bddc will converge in most cases in less than 200 iterations
     #the local will take more

@@ -85,8 +85,8 @@ MultiProcessing = True
 import sys
 import numpy as np
 sys.path.insert(0,"Functions")
-from MeshCreation import *
 sys.path.insert(0,"Settings")
+from MeshCreation import *
 from Settings import DefaultSettings
 from SingleSolve import SingleFrequency
 from FullSolvers import *
@@ -95,7 +95,6 @@ from ResultsFunctions import *
 
 
 #Meshing
-
 #Create the mesh
 Meshmaker(Geometry,MeshSize)
 #Update the .vol file and create the material dictionaries
@@ -103,11 +102,17 @@ Materials,mur,sig,inorout = VolMatUpdater(Geometry)
 
 #create the array of points to be used in the sweep
 Array = np.logspace(Start,Finish,Points)
-CPUs,PODPoints,PODTol = DefaultSettings()
+CPUs,PODPoints,PODTol,PODErrorBars = DefaultSettings()
+SavePOD = False
+if PODErrorBars!=True:
+    ErrorTensors=False
+else:
+    ErrorTensors=True
 PODArray = np.logspace(Start,Finish,PODPoints)
+#PODArray = np.linspace(10**Start,10**Finish,PODPoints)
 
 #Create the folders which will be used to save everything
-FolderMaker(Geometry, Single, Array, Omega, Pod, PlotPod, PODArray, PODTol, alpha, Order, MeshSize, mur, sig)
+sweepname = FolderMaker(Geometry, Single, Array, Omega, Pod, PlotPod, PODArray, PODTol, alpha, Order, MeshSize, mur, sig, ErrorTensors)
 
 #Run the sweep
 
@@ -119,20 +124,31 @@ else:
     if Pod==True:
         if MultiProcessing==True:
             if PlotPod==True:
-                TensorArray, EigenValues, N0, PODTensors, PODEigenValues, elements = PODSweepMulti(Geometry,Order,alpha,inorout,mur,sig,Array,PODArray,PODTol,PlotPod,CPUs)
+                if PODErrorBars==True:
+                    TensorArray, EigenValues, N0, PODTensors, PODEigenValues, elements, ErrorTensors = PODSweepMulti(Geometry,Order,alpha,inorout,mur,sig,Array,PODArray,PODTol,PlotPod,CPUs,sweepname,SavePOD,PODErrorBars)
+                else:
+                    TensorArray, EigenValues, N0, PODTensors, PODEigenValues, elements = PODSweepMulti(Geometry,Order,alpha,inorout,mur,sig,Array,PODArray,PODTol,PlotPod,CPUs,sweepname,SavePOD,PODErrorBars)
             else:
-                TensorArray, EigenValues, N0, elements = PODSweepMulti(Geometry,Order,alpha,inorout,mur,sig,Array,PODArray,PODTol,PlotPod,CPUs)
+                if PODErrorBars==True:
+                    TensorArray, EigenValues, N0, elements, ErrorTensors = PODSweepMulti(Geometry,Order,alpha,inorout,mur,sig,Array,PODArray,PODTol,PlotPod,CPUs,sweepname,SavePOD,PODErrorBars)
+                else:
+                    TensorArray, EigenValues, N0, elements = PODSweepMulti(Geometry,Order,alpha,inorout,mur,sig,Array,PODArray,PODTol,PlotPod,CPUs,sweepname,SavePOD,PODErrorBars)
         else:
             if PlotPod==True:
-                TensorArray, EigenValues, N0, PODTensors, PODEigenValues, elements = PODSweep(Geometry,Order,alpha,inorout,mur,sig,Array,PODArray,PODTol,PlotPod)
+                if PODErrorBars==True:
+                    TensorArray, EigenValues, N0, PODTensors, PODEigenValues, elements, ErrorTensors = PODSweep(Geometry,Order,alpha,inorout,mur,sig,Array,PODArray,PODTol,PlotPod,sweepname,SavePOD,PODErrorBars)
+                else:
+                    TensorArray, EigenValues, N0, PODTensors, PODEigenValues, elements = PODSweep(Geometry,Order,alpha,inorout,mur,sig,Array,PODArray,PODTol,PlotPod,sweepname,SavePOD,PODErrorBars)
             else:
-                TensorArray, EigenValues, N0, elements = PODSweep(Geometry,Order,alpha,inorout,mur,sig,Array,PODArray,PODTol,PlotPod)
+                if PODErrorBars==True:
+                    TensorArray, EigenValues, N0, elements, ErrorTensors = PODSweep(Geometry,Order,alpha,inorout,mur,sig,Array,PODArray,PODTol,PlotPod,sweepname,SavePOD,PODErrorBars)
+                else:
+                    TensorArray, EigenValues, N0, elements = PODSweep(Geometry,Order,alpha,inorout,mur,sig,Array,PODArray,PODTol,PlotPod,sweepname,SavePOD,PODErrorBars)
     else:
         if MultiProcessing==True:
             TensorArray, EigenValues, N0, elements = FullSweepMulti(Geometry,Order,alpha,inorout,mur,sig,Array,CPUs)
         else:
             TensorArray, EigenValues, N0, elements = FullSweep(Geometry,Order,alpha,inorout,mur,sig,Array)
-
 
 
 #Plotting and saving
@@ -141,13 +157,11 @@ if Single==True:
     SingleSave(Geometry, Omega, MPT, EigenValues, N0, elements, alpha, Order, MeshSize, mur, sig)
 elif PlotPod==True:
     if Pod==True:
-        PODSave(Geometry, Array, TensorArray, EigenValues, N0, PODTensors, PODEigenValues, PODArray, PODTol, elements, alpha, Order, MeshSize, mur, sig)
+        PODSave(Geometry, Array, TensorArray, EigenValues, N0, PODTensors, PODEigenValues, PODArray, PODTol, elements, alpha, Order, MeshSize, mur, sig, ErrorTensors)
     else:
-        FullSave(Geometry, Array, TensorArray, EigenValues, N0, Pod, PODArray, PODTol, elements, alpha, Order, MeshSize, mur, sig)
+        FullSave(Geometry, Array, TensorArray, EigenValues, N0, Pod, PODArray, PODTol, elements, alpha, Order, MeshSize, mur, sig, ErrorTensors)
 else:
-    FullSave(Geometry, Array, TensorArray, EigenValues, N0, Pod, PODArray, PODTol, elements, alpha, Order, MeshSize, mur, sig)
-
-
+    FullSave(Geometry, Array, TensorArray, EigenValues, N0, Pod, PODArray, PODTol, elements, alpha, Order, MeshSize, mur, sig, ErrorTensors)
 
 
 
