@@ -43,7 +43,9 @@ for further details about setting up examples and options please see the include
 Note before running the code on Linux the user is required to enter the following lines in the command line
 
 export OMP_NUM_THREADS=1
+
 export MKL_NUM_THREADS=1
+
 export MKL_THREADING_LAYER=sequential
 
 or alternatively edit their .bashrc to include this. 
