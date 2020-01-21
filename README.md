@@ -40,6 +40,7 @@ python3 main.py
 
 for further details about setting up examples and options please see the included documentation MPT-Calculator.pdf.
 
+<<<<<<< HEAD
 Note before running the code on Linux the user is required to enter the following lines in the command line
 
 export OMP_NUM_THREADS=1
@@ -47,6 +48,9 @@ export MKL_NUM_THREADS=1
 export MKL_THREADING_LAYER=sequential
 
 or alternatively edit their .bashrc to include this. 
+=======
+Note with current version of NGSolve 6.2.1908 there is an issue with the BDDC preconditioner when applied on Ubuntu 18.04 and instead the default preconditioner in Settings/Settings.py should be changed to the local preconditioner. This can be done by setting Solver="local" on line 41. Under MAC OS 10.13.6 and the current version of NGSolve no change is required.
+>>>>>>> 8ae0fe605da4cefc8914e7dab4f2b21d240c9431
 
 #Referencing
 
