@@ -15,7 +15,7 @@ from MPTFunctions import *
 def PODP(mesh,fes0,fes,fes2,Theta0SolVec,xivec,alpha,sigma,mu,inout,epsi,Theta1E1Sol,Theta1E2Sol,Theta1E3Sol,FrequencyArray,ConstructedFrequencyArray,PODtol,N0Errors,alphaLB,PODErrorBars):
     
     #Calculate the imaginary tensors in the full order space (boolean)
-    ImagTensorFullOrderCalc = True
+    ImagTensorFullOrderCalc = False
     #On how many cores do you want to produce the tensors
     CPUs = 4
     
