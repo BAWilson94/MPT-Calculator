@@ -7,11 +7,19 @@ import scipy.sparse as sp
 import scipy.sparse.linalg as spl
 import multiprocessing
 from ngsolve import *
+from MPTFunctions import *
 
 
 #Function definition to use snapshots to produce a full frequency sweep
 #Outputs -Solution vectors for a full frequency sweep (3, 1 for each direction) as numpy arrays
 def PODP(mesh,fes0,fes,fes2,Theta0SolVec,xivec,alpha,sigma,mu,inout,epsi,Theta1E1Sol,Theta1E2Sol,Theta1E3Sol,FrequencyArray,ConstructedFrequencyArray,PODtol,N0Errors,alphaLB,PODErrorBars):
+    
+    #Calculate the imaginary tensors in the full order space (boolean)
+    ImagTensorFullOrderCalc = True
+    #On how many cores do you want to produce the tensors
+    CPUs = 4
+    
+    
     #Print an update on progress
     print(' performing SVD',end='\r')
     #Set up some useful constants
@@ -42,6 +50,9 @@ def PODP(mesh,fes0,fes,fes2,Theta0SolVec,xivec,alpha,sigma,mu,inout,epsi,Theta1E
                 if s3norm[i]<PODtol:
                     cutoff=i
                     break
+    
+    print(cutoff)
+    print(s1norm)
     
     #Truncate the SVD matrices
     u1Truncated=u1[:,:cutoff]
@@ -242,8 +253,7 @@ def PODP(mesh,fes0,fes,fes2,Theta0SolVec,xivec,alpha,sigma,mu,inout,epsi,Theta1E
     
 ########################################################################
 #project the calculations for tensors to the reduced basis
-    
-    print(" ")
+
     with TaskManager():
         #Check whether these are needed
         u = fes2.TrialFunction()
@@ -387,6 +397,11 @@ def PODP(mesh,fes0,fes,fes2,Theta0SolVec,xivec,alpha,sigma,mu,inout,epsi,Theta1E
 
 ########################################################################
 #Produce the sweep on the lower dimensional space
+    if ImagTensorFullOrderCalc == True:
+        W1 = np.zeros([ndof2,len(ConstructedFrequencyArray)],dtype=complex)
+        W2 = np.zeros([ndof2,len(ConstructedFrequencyArray)],dtype=complex)
+        W3 = np.zeros([ndof2,len(ConstructedFrequencyArray)],dtype=complex)
+    
     
     for i,omega in enumerate(ConstructedFrequencyArray):
         
@@ -398,9 +413,10 @@ def PODP(mesh,fes0,fes,fes2,Theta0SolVec,xivec,alpha,sigma,mu,inout,epsi,Theta1E
         g3=np.linalg.solve(HA0H3+HA1H3*omega,HR3*omega)
         
         #This part projects the problem to the higher dimensional space
-        #W1[:,i]=np.dot(u1Truncated,g1).flatten()
-        #W2[:,i]=np.dot(u2Truncated,g2).flatten()
-        #W3[:,i]=np.dot(u3Truncated,g3).flatten()
+        if ImagTensorFullOrderCalc == True:
+            W1[:,i]=np.dot(u1Truncated,g1).flatten()
+            W2[:,i]=np.dot(u2Truncated,g2).flatten()
+            W3[:,i]=np.dot(u3Truncated,g3).flatten()
         
         #This part is for obtaining the tensor coefficients in the lower dimensional space
         
@@ -523,8 +539,30 @@ def PODP(mesh,fes0,fes,fes2,Theta0SolVec,xivec,alpha,sigma,mu,inout,epsi,Theta1E
     
     RealTensors = ((alpha**3)/4)*RealTensors
     ImagTensors = ((alpha**3)/4)*ImagTensors
-        
+    
     print(' reduced order systems solved        ')
+    
+    #Calculate the imaginary tensors in the full order space if required
+    if ImagTensorFullOrderCalc == True:
+        #Create the inputs for the calculation of the tensors
+        Runlist = []
+        manager = multiprocessing.Manager()
+        counter = manager.Value('i', 0)
+        for i,Omega in enumerate(ConstructedFrequencyArray):
+            nu = Omega*Mu0*(alpha**2)
+            NewInput = (mesh,fes,fes2,W1[:,i],W2[:,i],W3[:,i],Theta0SolVec,xivec,alpha,mu,sigma,inout,nu,counter,NumberofConstructedFrequencies)
+            Runlist.append(NewInput)
+    
+        #Run in parallel
+        with multiprocessing.Pool(CPUs) as pool:
+            Output = pool.starmap(MPTCalculator, Runlist)
+        print(' calculated tensors             ')
+        print(' frequency sweep complete')
+        
+        #Unpack the outputs
+        for i, OutputNumber in enumerate(Output):
+            ImagTensors[i,:]=(OutputNumber[1]).flatten()
+    
     
     if PODErrorBars==True:
         return RealTensors,ImagTensors,ErrorTensors

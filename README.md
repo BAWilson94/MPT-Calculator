@@ -48,7 +48,14 @@ export MKL_NUM_THREADS=1
 
 export MKL_THREADING_LAYER=sequential
 
-or alternatively edit their .bashrc to include this. 
+or alternatively edit their .bashrc to include this.
+
+#Known Issues
+There are currently 2 known issues with the MPT-Calculator which we are currently working to resolve.
+
+1) There is an occasional failure whilst running simulations for points in a frequency sweep which is due to an issue with NGSolve. If this happens you need to rerun the sweep.
+
+2) Currently whilst using NGSolve-6.2.1910 there is an issue with producing off diagonal coefficients for the Imaginary Tensor from the reduced order model. This can be fixed by setting ImagTensorFullOrd erCalc = True, which can be found in the file Functions/PODFunctions.py. Please note that this will slow down the simulation slightly.
 
 #Referencing
 
@@ -58,7 +65,7 @@ If you use the tool, please refer to it in your work by citing the references
 
 [5] P. D. Ledger and W. R. B. Lionheart,  An explicit formula for the magnetic polarizability tensor for object characterization, IEEE Trans Geosci Remote Sens., 56(6), 3520-3533, 2018.
 
-[6] B. A. Wilson and P. D. Ledger, Efficient numerical schemes for the computation of the magnetic polarizability tensor, In preparation, 2019.
+[6] B. A. Wilson and P. D. Ledger, Efficient computation of the magnetic polarizabiltiy tensor spectral signature using pod. 2020. https://arxiv.org/abs/2001.07629
 
 as well as those of NGSolve:
 
