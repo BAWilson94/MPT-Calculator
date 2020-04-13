@@ -23,7 +23,7 @@ def Theta0(fes,Order,alpha,mu,inout,e,Tolerance,Maxsteps,epsi,simnumber,Solver):
     u = fes.TrialFunction()
     v = fes.TestFunction()
 
-    #Create the bilinear form
+    #Create the bilinear form (this is for theta^0 tilda)
     f = LinearForm(fes)
     f += SymbolicLFI(inout*(2*(1-mu**(-1)))*InnerProduct(e,curl(v)))
     a = BilinearForm(fes, symmetric=True, condense=True)
@@ -46,7 +46,9 @@ def Theta0(fes,Order,alpha,mu,inout,e,Tolerance,Maxsteps,epsi,simnumber,Solver):
     Theta.vec.data += a.inner_solve * f.vec
     Theta.vec.data += a.harmonic_extension * Theta.vec
     
-    return Theta
+    Theta_Return = np.zeros([fes.ndof])
+    Theta_Return[:] = Theta.vec.FV().NumPy()
+    return Theta_Return
 
 
 
@@ -69,10 +71,10 @@ def Theta1(fes,fes2,Theta0Sol,xi,Order,alpha,nu,sigma,mu,inout,Tolerance,Maxstep
     Theta.Set((0,0,0), BND)
 
     #Test and trial functions
-    u = fes.TrialFunction()
-    v = fes.TestFunction()
+    u = fes2.TrialFunction()
+    v = fes2.TestFunction()
 
-    #Create the bilinear form
+    #Create the bilinear form (this is for the complex conjugate of theta^1)
     f = LinearForm(fes2)
     f += SymbolicLFI(inout * (-1j) * nu*sigma * InnerProduct(Theta0,v))
     f += SymbolicLFI(inout * (-1j) * nu*sigma * InnerProduct(xi,v))
@@ -92,12 +94,14 @@ def Theta1(fes,fes2,Theta0Sol,xi,Order,alpha,nu,sigma,mu,inout,Tolerance,Maxstep
     f.vec.data += a.harmonic_extension_trans * f.vec
     res = f.vec.CreateVector()
     res.data = f.vec - a.mat * Theta.vec
-    inverse= CGSolver(a.mat, c.mat, precision=Tolerance, maxsteps=Maxsteps)
+    inverse = CGSolver(a.mat, c.mat, precision=Tolerance, maxsteps=Maxsteps)
     Theta.vec.data += inverse * res
     Theta.vec.data += a.inner_solve * f.vec
     Theta.vec.data += a.harmonic_extension * Theta.vec
-
-    return Theta
+    
+    Theta_Return = np.zeros([fes2.ndof],dtype=complex)
+    Theta_Return[:] = Theta.vec.FV().NumPy()
+    return Theta_Return
 
 
 #Function definition to calculate MPTs from solution vectors
@@ -140,8 +144,31 @@ def MPTCalculator(mesh,fes,fes2,Theta1E1Sol,Theta1E2Sol,Theta1E3Sol,Theta0Sol,xi
                 Theta1j.vec.FV().NumPy()[:]=Theta1E3Sol
 
             #Real and Imaginary parts
-            R[i,j]=-(((alpha**3)/4)*Integrate((mu**(-1))*InnerProduct(curl(Theta1j),Conj(curl(Theta1i))),mesh)).real
-            I[i,j]=((alpha**3)/4)*Integrate(inout*nu*sigma*InnerProduct(Theta1j+Theta0j+xij,Conj(Theta1i+Theta0i+xii)),mesh).real
+            R[i,j]=-(((alpha**3)/4)*Integrate((mu**(-1))*InnerProduct(curl(Theta1j),curl(Theta1i)),mesh)).real
+            I[i,j]=((alpha**3)/4)*Integrate(inout*nu*sigma*InnerProduct(Theta1j+Theta0j+xij,Theta1i+Theta0i+xii),mesh).real
     R+=np.transpose(R-np.diag(np.diag(R))).real
     I+=np.transpose(I-np.diag(np.diag(I))).real
     return R, I
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

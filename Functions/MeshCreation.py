@@ -21,8 +21,11 @@ def Meshmaker(Geometry,Mesh):
     else:
         print("No mesh created, please specify a number between 1-5")
     #Create the mesh
-    subprocess.call(['netgen','-geofile=GeoFiles/'+Geometry,'-meshfile=VolFiles/'+objname+'.vol',Meshsizing,'-batchmode'])
-    
+    try:
+        subprocess.call(['netgen','-geofile=GeoFiles/'+Geometry,'-meshfile=VolFiles/'+objname+'.vol',Meshsizing,'-meshsizefile='+objname+'.msz','-batchmode'])
+    except:
+        print('oops')
+        subprocess.call(['netgen','-geofile=GeoFiles/'+Geometry,'-meshfile=VolFiles/'+objname+'.vol',Meshsizing,'-batchmode'])
     return
 
 

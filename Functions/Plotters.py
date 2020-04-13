@@ -47,12 +47,12 @@ def TickFormatter(value,tick_number):
 
 
 
-def PODEigPlotter(savename,Array,PODArray,EigenValues,PODEigenValues):
+def PODEigPlotter(savename,Array,PODArray,EigenValues,PODEigenValues,EddyCurrentTest):
     #Create a way to reference xkcd colours
     PYCOL=['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf']
     
     #Retrieve the settings for the plot
-    Title, Show, ETP, _, MLS, MMS, SLS, SMS, _, _ = PlotterSettings()
+    Title, Show, ETP, _, MLS, MMS, SLS, SMS, _, _, ECL = PlotterSettings()
     
     #Plot the real graph
     fig, ax = plt.subplots()
@@ -68,8 +68,11 @@ def PODEigPlotter(savename,Array,PODArray,EigenValues,PODEigenValues):
     for i,line in enumerate(ETP):
         lines += ax.plot(PODArray,PODEigenValues[:,line-1].real,SLS,markersize=SMS,color=PYCOL[i])
     
+    ymin, ymax = ax.get_ylim()
+    
     #Format the axes
     plt.xscale('log')
+    plt.ylim(ymin, ymax)
     ax.grid(True)
     ax.yaxis.set_major_formatter(plt.FuncFormatter(TickFormatter))
     plt.subplots_adjust(wspace=0.6, hspace=0.6, left=0.15, bottom=0.1, right=0.94, top=0.90)
@@ -89,6 +92,15 @@ def PODEigPlotter(savename,Array,PODArray,EigenValues,PODEigenValues):
     for i,number in enumerate(ETP):
         names.append(r"$\lambda_{"+str(number)+"}(\mathcal{N}^0+\mathcal{R})$ (Snapshot)")
     
+    #Show where the eddy-current breaks down (if applicable)
+    if isinstance(EddyCurrentTest, float):
+        if ECL == True:
+            x = np.ones(10)*EddyCurrentTest
+            y = np.linspace(ymin,ymax,10)
+            lines += ax.plot(x,y,'--r')
+            names.append(r"eddy-current model valid")
+    
+    #Make the legend
     ax.legend(lines,names)
     
     #Save the graph
@@ -110,8 +122,11 @@ def PODEigPlotter(savename,Array,PODArray,EigenValues,PODEigenValues):
     for i,line in enumerate(ETP):
         lines += ax.plot(PODArray,PODEigenValues[:,line-1].imag,SLS,markersize=SMS,color=PYCOL[i])
     
+    ymin, ymax = ax.get_ylim()
+    
     #Format the axes
     plt.xscale('log')
+    plt.ylim(ymin, ymax)
     ax.grid(True)
     ax.yaxis.set_major_formatter(plt.FuncFormatter(TickFormatter))
     plt.subplots_adjust(wspace=0.6, hspace=0.6, left=0.15, bottom=0.1, right=0.94, top=0.90)
@@ -131,21 +146,29 @@ def PODEigPlotter(savename,Array,PODArray,EigenValues,PODEigenValues):
     for i,number in enumerate(ETP):
         names.append(r"$\lambda_{"+str(number)+"}(\mathcal{I})$ (Snapshot)")
     
+    #Show where the eddy-current breaks down (if applicable)
+    if isinstance(EddyCurrentTest, float):
+        if ECL == True:
+            x = np.ones(10)*EddyCurrentTest
+            y = np.linspace(ymin,ymax,10)
+            lines += ax.plot(x,y,'--r')
+            names.append(r"eddy-current model valid")
+    
+    #Make the legend
     ax.legend(lines,names)
     
     #Save the graph
     plt.savefig(savename+"ImaginaryEigenvalues.pdf")
     
-    
     return Show
 
 
-def EigPlotter(savename,Array,EigenValues):
+def EigPlotter(savename,Array,EigenValues,EddyCurrentTest):
     #Create a way to reference xkcd colours
     PYCOL=['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf']
     
     #Retrieve the settings for the plot
-    Title, Show, ETP, _, MLS, MMS, _, _, _, _ = PlotterSettings()
+    Title, Show, ETP, _, MLS, MMS, _, _, _, _, ECL = PlotterSettings()
     
     #Plot the graph
     fig, ax = plt.subplots()
@@ -157,8 +180,11 @@ def EigPlotter(savename,Array,EigenValues):
         else:
             lines += ax.plot(Array,EigenValues[:,line-1].real,MLS,markersize=MMS,color=PYCOL[i])
     
+    ymin, ymax = ax.get_ylim()
+    
     #Format the axes
     plt.xscale('log')
+    plt.ylim(ymin, ymax)
     ax.grid(True)
     ax.yaxis.set_major_formatter(plt.FuncFormatter(TickFormatter))
     plt.subplots_adjust(wspace=0.6, hspace=0.6, left=0.15, bottom=0.1, right=0.94, top=0.90)
@@ -176,6 +202,15 @@ def EigPlotter(savename,Array,EigenValues):
     for i,number in enumerate(ETP):
         names.append(r"$\lambda_{"+str(number)+"}(\mathcal{N}^0+\mathcal{R})$")
     
+    #Show where the eddy-current breaks down (if applicable)
+    if isinstance(EddyCurrentTest, float):
+        if ECL == True:
+            x = np.ones(10)*EddyCurrentTest
+            y = np.linspace(ymin,ymax,10)
+            lines += ax.plot(x,y,'--r')
+            names.append(r"eddy-current model valid")
+    
+    #Make the legend
     ax.legend(lines,names)
     
     #Save the graph
@@ -192,8 +227,11 @@ def EigPlotter(savename,Array,EigenValues):
         else:
             lines += ax.plot(Array,EigenValues[:,line-1].imag,MLS,markersize=MMS,color=PYCOL[i])
     
+    ymin, ymax = ax.get_ylim()
+    
     #Format the axes
     plt.xscale('log')
+    plt.ylim(ymin, ymax)
     ax.grid(True)
     ax.yaxis.set_major_formatter(plt.FuncFormatter(TickFormatter))
     plt.subplots_adjust(wspace=0.6, hspace=0.6, left=0.15, bottom=0.1, right=0.94, top=0.90)
@@ -211,6 +249,15 @@ def EigPlotter(savename,Array,EigenValues):
     for i,number in enumerate(ETP):
         names.append(r"$\lambda_{"+str(number)+"}(\mathcal{I})$")
     
+    #Show where the eddy-current breaks down (if applicable)
+    if isinstance(EddyCurrentTest, float):
+        if ECL == True:
+            x = np.ones(10)*EddyCurrentTest
+            y = np.linspace(ymin,ymax,10)
+            lines += ax.plot(x,y,'--r')
+            names.append(r"eddy-current model valid")
+    
+    #Make the legend
     ax.legend(lines,names)
     
     #Save the graph
@@ -220,12 +267,12 @@ def EigPlotter(savename,Array,EigenValues):
     return Show
     
 
-def PODTensorPlotter(savename,Array,PODArray,Values,PODValues):
+def PODTensorPlotter(savename,Array,PODArray,Values,PODValues,EddyCurrentTest):
     #Create a way to reference xkcd colours
     PYCOL=['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf']
     
     #Retrieve the settings for the plot
-    Title, Show, _, TTP,MLS, MMS, SLS, SMS, _, _ = PlotterSettings()
+    Title, Show, _, TTP,MLS, MMS, SLS, SMS, _, _, ECL = PlotterSettings()
     
     #Plot the graph
     fig, ax = plt.subplots()
@@ -241,8 +288,11 @@ def PODTensorPlotter(savename,Array,PODArray,Values,PODValues):
     for i,line in enumerate(TTP):
         lines += ax.plot(PODArray,PODValues[:,line-1].real,SLS,markersize=SMS,color=PYCOL[i])
     
+    ymin, ymax = ax.get_ylim()
+    
     #Format the axes
     plt.xscale('log')
+    plt.ylim(ymin, ymax)
     ax.grid(True)
     ax.yaxis.set_major_formatter(plt.FuncFormatter(TickFormatter))
     plt.subplots_adjust(wspace=0.6, hspace=0.6, left=0.15, bottom=0.1, right=0.94, top=0.90)
@@ -262,14 +312,23 @@ def PODTensorPlotter(savename,Array,PODArray,Values,PODValues):
         if number == 1 or number == 4 or number == 6:
             names.append(r"Re($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$) (POD)")
         else:
-            names.append(r"Re($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Im($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$) (POD)")
+            names.append(r"Re($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Re($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$) (POD)")
     for i,number in enumerate(TTP):
         if number == 1 or number == 4 or number == 6:
             names.append(r"Re($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$) (Snapshot)")
         else:
-            names.append(r"Re($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Im($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$) (Snapshot)")
+            names.append(r"Re($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Re($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$) (Snapshot)")
+    
+    #Show where the eddy-current breaks down (if applicable)
+    if isinstance(EddyCurrentTest, float):
+        if ECL == True:
+            x = np.ones(10)*EddyCurrentTest
+            y = np.linspace(ymin,ymax,10)
+            lines += ax.plot(x,y,'--r')
+            names.append(r"eddy-current model valid")
+    
     #Shrink the size of the legend if there are to many lines
-    if len(names)>6:
+    if len(names)>7:
         ax.legend(lines,names,prop={'size':8})
     else:
         ax.legend(lines,names)
@@ -292,8 +351,11 @@ def PODTensorPlotter(savename,Array,PODArray,Values,PODValues):
     for i,line in enumerate(TTP):
         lines += ax.plot(PODArray,PODValues[:,line-1].imag,SLS,markersize=SMS,color=PYCOL[i])
     
+    ymin, ymax = ax.get_ylim()
+    
     #Format the axes
     plt.xscale('log')
+    plt.ylim(ymin, ymax)
     ax.grid(True)
     ax.yaxis.set_major_formatter(plt.FuncFormatter(TickFormatter))
     plt.subplots_adjust(wspace=0.6, hspace=0.6, left=0.15, bottom=0.1, right=0.94, top=0.90)
@@ -311,14 +373,23 @@ def PODTensorPlotter(savename,Array,PODArray,Values,PODValues):
         if number == 1 or number == 4 or number == 6:
             names.append(r"Im($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$) (POD)")
         else:
-            names.append(r"Im($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Re($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$) (POD)")
+            names.append(r"Im($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Im($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$) (POD)")
     for i,number in enumerate(TTP):
         if number == 1 or number == 4 or number == 6:
             names.append(r"Im($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$) (Snapshot)")
         else:
-            names.append(r"Im($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Re($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$) (Snapshot)")
+            names.append(r"Im($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Im($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$) (Snapshot)")
+    
+    #Show where the eddy-current breaks down (if applicable)
+    if isinstance(EddyCurrentTest, float):
+        if ECL == True:
+            x = np.ones(10)*EddyCurrentTest
+            y = np.linspace(ymin,ymax,10)
+            lines += ax.plot(x,y,'--r')
+            names.append(r"eddy-current model valid")
+    
     #Shrink the size of the legend if there are to many lines
-    if len(names)>6:
+    if len(names)>7:
         ax.legend(lines,names,prop={'size':8})
     else:
         ax.legend(lines,names)
@@ -331,12 +402,12 @@ def PODTensorPlotter(savename,Array,PODArray,Values,PODValues):
 
 
 
-def TensorPlotter(savename,Array,Values):
+def TensorPlotter(savename,Array,Values,EddyCurrentTest):
     #Create a way to reference xkcd colours
     PYCOL=['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf']
     
     #Retrieve the settings for the plot
-    Title, Show, _, TTP, MLS, MMS, _, _, _, _ = PlotterSettings()
+    Title, Show, _, TTP, MLS, MMS, _, _, _, _, ECL = PlotterSettings()
     
     #Plot the graph
     fig, ax = plt.subplots()
@@ -348,8 +419,11 @@ def TensorPlotter(savename,Array,Values):
         else:
             lines += ax.plot(Array,Values[:,line-1].real,MLS,markersize=MMS,color=PYCOL[i])
     
+    ymin, ymax = ax.get_ylim()
+    
     #Format the axes
     plt.xscale('log')
+    plt.ylim(ymin, ymax)
     ax.grid(True)
     ax.yaxis.set_major_formatter(plt.FuncFormatter(TickFormatter))
     plt.subplots_adjust(wspace=0.6, hspace=0.6, left=0.15, bottom=0.1, right=0.94, top=0.90)
@@ -370,6 +444,15 @@ def TensorPlotter(savename,Array,Values):
         else:
             names.append(r"Re($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Re($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$)")
     
+    #Show where the eddy-current breaks down (if applicable)
+    if isinstance(EddyCurrentTest, float):
+        if ECL == True:
+            x = np.ones(10)*EddyCurrentTest
+            y = np.linspace(ymin,ymax,10)
+            lines += ax.plot(x,y,'--r')
+            names.append(r"eddy-current model valid")
+    
+    #Make the legend
     ax.legend(lines,names)
     
     #Save the graph
@@ -386,8 +469,11 @@ def TensorPlotter(savename,Array,Values):
         else:
             lines += ax.plot(Array,Values[:,line-1].imag,MLS,markersize=MMS,color=PYCOL[i])
     
+    ymin, ymax = ax.get_ylim()
+    
     #Format the axes
     plt.xscale('log')
+    plt.ylim(ymin, ymax)
     ax.grid(True)
     ax.yaxis.set_major_formatter(plt.FuncFormatter(TickFormatter))
     plt.subplots_adjust(wspace=0.6, hspace=0.6, left=0.15, bottom=0.1, right=0.94, top=0.90)
@@ -407,6 +493,15 @@ def TensorPlotter(savename,Array,Values):
         else:
             names.append(r"Im($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Im($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$)")
     
+    #Show where the eddy-current breaks down (if applicable)
+    if isinstance(EddyCurrentTest, float):
+        if ECL == True:
+            x = np.ones(10)*EddyCurrentTest
+            y = np.linspace(ymin,ymax,10)
+            lines += ax.plot(x,y,'--r')
+            names.append(r"eddy-current model valid")
+    
+    #Make the legend
     ax.legend(lines,names)
     
     #Save the graph
@@ -417,12 +512,12 @@ def TensorPlotter(savename,Array,Values):
 
 
 
-def PODErrorPlotter(savename,Array,PODArray,Values,PODValues,Errors):
+def PODErrorPlotter(savename,Array,PODArray,Values,PODValues,Errors,EddyCurrentTest):
     #Create a way to reference xkcd colours
     PYCOL=['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf']
     
     #Retrieve the settings for the plot
-    Title, Show, _, TTP,MLS, MMS, SLS, SMS, EBLS, EBMS = PlotterSettings()
+    Title, Show, _, TTP,MLS, MMS, SLS, SMS, EBLS, EBMS, ECL = PlotterSettings()
     
     #Plot the graph
     fig, ax = plt.subplots()
@@ -443,6 +538,20 @@ def PODErrorPlotter(savename,Array,PODArray,Values,PODValues,Errors):
     #Plot the snapshots
     for i,line in enumerate(TTP):
         lines += ax.plot(PODArray,PODValues[:,line-1].real,SLS,markersize=SMS,color=PYCOL[i])
+    
+    #Calculate the limits
+    ymin = min(np.amin(Values.real),np.amin(PODValues.real))
+    ymax = max(np.amax(Values.real),np.amax(PODValues.real))
+    y_range = ymax-ymin
+    ymin -= 0.05*y_range
+    ymax += 0.05*y_range
+    
+    #Show where the eddy-current breaks down (if applicable)
+    if isinstance(EddyCurrentTest, float):
+        if ECL == True:
+            x = np.ones(10)*EddyCurrentTest
+            y = np.linspace(ymin,ymax,10)
+            lines += ax.plot(x,y,'--r')
         
     #Plot the top error bars (we plot them seperatly for the legend order)
     for i,line in enumerate(TTP):
@@ -450,6 +559,7 @@ def PODErrorPlotter(savename,Array,PODArray,Values,PODValues,Errors):
     
     #Format the axes
     plt.xscale('log')
+    plt.ylim(ymin, ymax)
     ax.grid(True)
     ax.yaxis.set_major_formatter(plt.FuncFormatter(TickFormatter))
     plt.subplots_adjust(wspace=0.6, hspace=0.6, left=0.15, bottom=0.1, right=0.94, top=0.90)
@@ -478,10 +588,14 @@ def PODErrorPlotter(savename,Array,PODArray,Values,PODValues,Errors):
         else:
             names.append(r"Re($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Re($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$) (Snapshot)")
     
+    if isinstance(EddyCurrentTest, float):
+        if ECL == True:
+            names.append(r"eddy-current model valid")
+    
     #Shrink the size of the legend if there are to many lines
-    if len(names)>12:
+    if len(names)>13:
         ax.legend(lines,names,prop={'size':5})
-    elif len(names)>6:
+    elif len(names)>7:
         ax.legend(lines,names,prop={'size':8})
     else:
         ax.legend(lines,names)
@@ -509,14 +623,28 @@ def PODErrorPlotter(savename,Array,PODArray,Values,PODValues,Errors):
     #Plot the snapshots
     for i,line in enumerate(TTP):
         lines += ax.plot(PODArray,PODValues[:,line-1].imag,SLS,markersize=SMS,color=PYCOL[i])
+    
+    #Calculate the limits
+    ymin = min(np.amin(Values.imag),np.amin(PODValues.imag))
+    ymax = max(np.amax(Values.imag),np.amax(PODValues.imag))
+    y_range = ymax-ymin
+    ymin -= 0.05*y_range
+    ymax += 0.05*y_range
+    
+    #Show where the eddy-current breaks down (if applicable)
+    if isinstance(EddyCurrentTest, float):
+        if ECL == True:
+            x = np.ones(10)*EddyCurrentTest
+            y = np.linspace(ymin,ymax,10)
+            lines += ax.plot(x,y,'--r')
         
     #Plot the top error bars (we plot them seperatly for the legend order)
     for i,line in enumerate(TTP):
         lines += ax.plot(Array,Values[:,line-1].imag+Errors[:,line-1],EBLS,markersize=EBMS,color=PYCOL[i])
     
-    
     #Format the axes
     plt.xscale('log')
+    plt.ylim(ymin, ymax)
     ax.grid(True)
     ax.yaxis.set_major_formatter(plt.FuncFormatter(TickFormatter))
     plt.subplots_adjust(wspace=0.6, hspace=0.6, left=0.15, bottom=0.1, right=0.94, top=0.90)
@@ -541,12 +669,17 @@ def PODErrorPlotter(savename,Array,PODArray,Values,PODValues,Errors):
         if number == 1 or number == 4 or number == 6:
             names.append(r"Im($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$) (Snapshot)")
         else:
-            names.append(r"Im($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Re($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$) (Snapshot)")
+            names.append(r"Im($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Im($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$) (Snapshot)")
+    
+    #Show where the eddy-current breaks down (if applicable)
+    if isinstance(EddyCurrentTest, float):
+        if ECL == True:
+            names.append(r"eddy-current model valid")
     
     #Shrink the size of the legend if there are to many lines
-    if len(names)>12:
+    if len(names)>13:
         ax.legend(lines,names,prop={'size':5})
-    elif len(names)>6:
+    elif len(names)>7:
         ax.legend(lines,names,prop={'size':8})
     else:
         ax.legend(lines,names)
@@ -560,12 +693,12 @@ def PODErrorPlotter(savename,Array,PODArray,Values,PODValues,Errors):
 
 
 
-def ErrorPlotter(savename,Array,Values,Errors):
+def ErrorPlotter(savename,Array,Values,Errors,EddyCurrentTest):
     #Create a way to reference xkcd colours
     PYCOL=['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf']
     
     #Retrieve the settings for the plot
-    Title, Show, _, TTP, MLS, MMS, _, _, EBLS, EBMS = PlotterSettings()
+    Title, Show, _, TTP, MLS, MMS, _, _, EBLS, EBMS, ECL = PlotterSettings()
     
     #Plot the graph
     fig, ax = plt.subplots()
@@ -582,13 +715,28 @@ def ErrorPlotter(savename,Array,Values,Errors):
             lines += ax.plot(Array,Values[:,line-1].real,MLS,markersize=MMS,color=PYCOL[i])
             #Plot bottom error bars
             lines += ax.plot(Array,Values[:,line-1].real-Errors[:,line-1],EBLS,markersize=EBMS,color=PYCOL[i])
-        
+    
+    #Calculate the limits
+    ymin = np.amin(Values.real)
+    ymax = np.amax(Values.real)
+    y_range = ymax-ymin
+    ymin -= 0.05*y_range
+    ymax += 0.05*y_range
+    
+    #Show where the eddy-current breaks down (if applicable)
+    if isinstance(EddyCurrentTest, float):
+        if ECL == True:
+            x = np.ones(10)*EddyCurrentTest
+            y = np.linspace(ymin,ymax,10)
+            lines += ax.plot(x,y,'--r')
+    
     #Plot the top error bars (we plot them seperatly for the legend order)
     for i,line in enumerate(TTP):
         lines += ax.plot(Array,Values[:,line-1].real+Errors[:,line-1],EBLS,markersize=EBMS,color=PYCOL[i])
     
     #Format the axes
     plt.xscale('log')
+    plt.ylim(ymin, ymax)
     ax.grid(True)
     ax.yaxis.set_major_formatter(plt.FuncFormatter(TickFormatter))
     plt.subplots_adjust(wspace=0.6, hspace=0.6, left=0.15, bottom=0.1, right=0.94, top=0.90)
@@ -611,10 +759,15 @@ def ErrorPlotter(savename,Array,Values,Errors):
             names.append(r"Re($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Re($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$)")
             names.append(r"Re($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Re($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$) (Certificate Bound)")
     
+    #Show where the eddy-current breaks down (if applicable)
+    if isinstance(EddyCurrentTest, float):
+        if ECL == True:
+            names.append(r"eddy-current model valid")
+    
     #Shrink the size of the legend if there are to many lines
-    if len(names)>=10:
+    if len(names)>=13:
         ax.legend(lines,names,prop={'size':6})
-    elif len(names)>=6:
+    elif len(names)>=7:
         ax.legend(lines,names,prop={'size':8})
     else:
         ax.legend(lines,names)
@@ -638,14 +791,28 @@ def ErrorPlotter(savename,Array,Values,Errors):
             lines += ax.plot(Array,Values[:,line-1].imag,MLS,markersize=MMS,color=PYCOL[i])
             #Plot bottom error bars
             lines += ax.plot(Array,Values[:,line-1].imag-Errors[:,line-1],EBLS,markersize=EBMS,color=PYCOL[i])
-        
+    
+    #Calculate the limits
+    ymin = np.amin(Values.imag)
+    ymax = np.amax(Values.imag)
+    y_range = ymax-ymin
+    ymin -= 0.05*y_range
+    ymax += 0.05*y_range
+    
+    #Show where the eddy-current breaks down (if applicable)
+    if isinstance(EddyCurrentTest, float):
+        if ECL == True:
+            x = np.ones(10)*EddyCurrentTest
+            y = np.linspace(ymin,ymax,10)
+            lines += ax.plot(x,y,'--r')
+    
     #Plot the top error bars (we plot them seperatly for the legend order)
     for i,line in enumerate(TTP):
         lines += ax.plot(Array,Values[:,line-1].imag+Errors[:,line-1],EBLS,markersize=EBMS,color=PYCOL[i])
     
-    
     #Format the axes
     plt.xscale('log')
+    plt.ylim(ymin, ymax)
     ax.grid(True)
     ax.yaxis.set_major_formatter(plt.FuncFormatter(TickFormatter))
     plt.subplots_adjust(wspace=0.6, hspace=0.6, left=0.15, bottom=0.1, right=0.94, top=0.90)
@@ -667,10 +834,15 @@ def ErrorPlotter(savename,Array,Values,Errors):
             names.append(r"Im($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Im($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$)")
             names.append(r"Im($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Im($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$) (Certificate Bound)")
     
+    #Show where the eddy-current breaks down (if applicable)
+    if isinstance(EddyCurrentTest, float):
+        if ECL == True:
+            names.append(r"eddy-current model valid")
+    
     #Shrink the size of the legend if there are to many lines
-    if len(names)>=10:
+    if len(names)>=13:
         ax.legend(lines,names,prop={'size':6})
-    elif len(names)>=6:
+    elif len(names)>=7:
         ax.legend(lines,names,prop={'size':8})
     else:
         ax.legend(lines,names)

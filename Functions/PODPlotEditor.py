@@ -21,6 +21,15 @@ PODEigenvalues = np.genfromtxt("Data/PODEigenvalues.csv",delimiter=",",dtype=com
 Tensors = np.genfromtxt("Data/Tensors.csv",delimiter=",",dtype=complex)
 PODTensors = np.genfromtxt("Data/PODTensors.csv",delimiter=",",dtype=complex)
 
+#Eddy-current breakdown line
+try:
+    f = open("Data/Eddy-current_breakdown.txt","r")
+    exec(f.readline())
+    f.close()
+    omega = float(omega)
+except:
+    omega = False
+
 
 
 #remove the rows so that the array represents an upper triangular matrix
@@ -31,8 +40,8 @@ PODTensors = np.concatenate([np.concatenate([PODTensors[:,:3],PODTensors[:,4:6]]
 savename = "Graphs/"
 
 #plot the graphs
-Show = PODEigPlotter(savename,Frequencies,PODFrequencies,Eigenvalues,PODEigenvalues)
-Show = PODTensorPlotter(savename,Frequencies,PODFrequencies,Tensors,PODTensors)
+Show = PODEigPlotter(savename,Frequencies,PODFrequencies,Eigenvalues,PODEigenvalues,omega)
+Show = PODTensorPlotter(savename,Frequencies,PODFrequencies,Tensors,PODTensors,omega)
 
 #plot the graph if required
 if Show==True:

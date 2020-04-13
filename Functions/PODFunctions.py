@@ -5,7 +5,7 @@
 import numpy as np
 import scipy.sparse as sp
 import scipy.sparse.linalg as spl
-import multiprocessing
+import multiprocessing_on_dill as multiprocessing
 from ngsolve import *
 from MPTFunctions import *
 
@@ -15,7 +15,7 @@ from MPTFunctions import *
 def PODP(mesh,fes0,fes,fes2,Theta0SolVec,xivec,alpha,sigma,mu,inout,epsi,Theta1E1Sol,Theta1E2Sol,Theta1E3Sol,FrequencyArray,ConstructedFrequencyArray,PODtol,N0Errors,alphaLB,PODErrorBars):
     
     #Calculate the imaginary tensors in the full order space (boolean)
-    ImagTensorFullOrderCalc = False
+    ImagTensorFullOrderCalc = True
     #On how many cores do you want to produce the tensors
     CPUs = 4
     
@@ -234,6 +234,13 @@ def PODP(mesh,fes0,fes,fes2,Theta0SolVec,xivec,alpha,sigma,mu,inout,epsi,Theta1E
                 MR1 = sp.vstack((MR1,sp.csr_matrix(lu.solve(RerrorReduced1[:,i]))))
                 MR2 = sp.vstack((MR2,sp.csr_matrix(lu.solve(RerrorReduced2[:,i]))))
                 MR3 = sp.vstack((MR3,sp.csr_matrix(lu.solve(RerrorReduced3[:,i]))))
+        
+        
+        lu = spl.spilu(M,drop_tol=10**-4)
+        for i in range(2*cutoff+1):
+                MR1[:,i] = lu.solve(RerrorReduced1[:,i])
+                MR2[:,i] = lu.solve(RerrorReduced2[:,i])
+                MR3[:,i] = lu.solve(RerrorReduced3[:,i])
 
 
         G1 = np.transpose(np.conjugate(RerrorReduced1))@np.transpose(MR1)

@@ -7,21 +7,43 @@ from ngsolve import *
 #Function definition to set up default settings 
 def DefaultSettings():
     #How many cores to be used (monitor memory consuption)
-    CPUs = 4
+    CPUs = 2
     #(int)
     
+    #Is it a big problem (more memory efficiency but slower)
+    BigProblem = False
+    #(boolean)
+    
     #How many snapshots should be taken
-    PODPoints = 21
+    PODPoints = 13
     #(int)
     
     #Tolerance to be used in the TSVD
-    PODTol = 10**-6
+    PODTol = 10**-4
     #(float)
     
+    return CPUs,BigProblem,PODPoints,PODTol
+
+def AdditionalOutputs():
+    #Plot the POD points
+    PlotPod = True
+    #(boolean) do you want to plot the snapshots (This requires additional
+    #calculations and will slow down sweep by around 2% for default settings)
+    
     #Produce certificate bounds for POD outputs
-    PODErrorBars = True
+    PODErrorBars = False
     #(boolean)
-    return CPUs,PODPoints,PODTol,PODErrorBars
+    
+    #Test where the eddy-current model breaks for the object
+    EddyCurrentTest = False
+    #(boolean)
+    
+    #Produce a vtk outputfile for the eddy-currents (outputs a large file!)
+    vtk_output = False
+    #(boolean) do you want to produce a vtk file of the eddy currents in the
+    #object (single frequency only)
+    
+    return PlotPod, PODErrorBars, EddyCurrentTest, vtk_output
     
 
 

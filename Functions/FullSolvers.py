@@ -5,7 +5,7 @@
 import os
 import sys
 import time
-import multiprocessing
+import multiprocessing_on_dill as multiprocessing
 
 import cmath
 import numpy as np
@@ -21,7 +21,7 @@ from Settings import SolverParameters
 
 
 #Function definition for a full order frequency sweep
-def FullSweep(Object,Order,alpha,inorout,mur,sig,Array):
+def FullSweep(Object,Order,alpha,inorout,mur,sig,Array,BigProblem):
     Object = Object[:-4]+".vol"
     #Set up the Solver Parameters
     Solver,epsi,Maxsteps,Tolerance = SolverParameters()
@@ -80,7 +80,7 @@ def FullSweep(Object,Order,alpha,inorout,mur,sig,Array):
     
     #Run in three directions and save in an array for later
     for i in range(3):
-        Theta0Sol[:,i] = Theta0(fes,Order,alpha,mu,inout,evec[i],Tolerance,Maxsteps,epsi,i+1,Solver).vec.FV().NumPy()
+        Theta0Sol[:,i] = Theta0(fes,Order,alpha,mu,inout,evec[i],Tolerance,Maxsteps,epsi,i+1,Solver)
     print(' solved theta0 problems    ')
     
     #Calculate the N0 tensor
@@ -120,10 +120,11 @@ def FullSweep(Object,Order,alpha,inorout,mur,sig,Array):
     #Sweep through all points
     for i,Omega in enumerate(Array):
         nu = Omega*Mu0*(alpha**2)
+        
         #Solve for each direction
-        Theta1Sol[:,0] = Theta1(fes,fes2,Theta0Sol[:,0],xivec[0],Order,alpha,nu,sigma,mu,inout,Tolerance,Maxsteps,epsi,Omega,i+1,NumberofFrequencies,Solver).vec.FV().NumPy()
-        Theta1Sol[:,1] = Theta1(fes,fes2,Theta0Sol[:,1],xivec[1],Order,alpha,nu,sigma,mu,inout,Tolerance,Maxsteps,epsi,Omega,i+1,NumberofFrequencies,Solver).vec.FV().NumPy()
-        Theta1Sol[:,2] = Theta1(fes,fes2,Theta0Sol[:,2],xivec[2],Order,alpha,nu,sigma,mu,inout,Tolerance,Maxsteps,epsi,Omega,i+1,NumberofFrequencies,Solver).vec.FV().NumPy()
+        Theta1Sol[:,0] = Theta1(fes,fes2,Theta0Sol[:,0],xivec[0],Order,alpha,nu,sigma,mu,inout,Tolerance,Maxsteps,epsi,Omega,i+1,NumberofFrequencies,Solver)
+        Theta1Sol[:,1] = Theta1(fes,fes2,Theta0Sol[:,1],xivec[1],Order,alpha,nu,sigma,mu,inout,Tolerance,Maxsteps,epsi,Omega,i+1,NumberofFrequencies,Solver)
+        Theta1Sol[:,2] = Theta1(fes,fes2,Theta0Sol[:,2],xivec[2],Order,alpha,nu,sigma,mu,inout,Tolerance,Maxsteps,epsi,Omega,i+1,NumberofFrequencies,Solver)
         
         #Calculate the tensors
         R,I = MPTCalculator(mesh,fes,fes2,Theta1Sol[:,0],Theta1Sol[:,1],Theta1Sol[:,2],Theta0Sol,xivec,alpha,mu,sigma,inout,nu,"No Print",NumberofFrequencies)
@@ -139,7 +140,7 @@ def FullSweep(Object,Order,alpha,inorout,mur,sig,Array):
 
 
 #Function definition for a full order frequency sweep in parallel
-def FullSweepMulti(Object,Order,alpha,inorout,mur,sig,Array,CPUs):
+def FullSweepMulti(Object,Order,alpha,inorout,mur,sig,Array,CPUs,BigProblem):
     Object = Object[:-4]+".vol"
     #Set up the Solver Parameters
     Solver,epsi,Maxsteps,Tolerance = SolverParameters()
@@ -208,7 +209,7 @@ def FullSweepMulti(Object,Order,alpha,inorout,mur,sig,Array,CPUs):
     
     #Unpack the outputs
     for i,Direction in enumerate(Output):
-        Theta0Sol[:,i] = Direction.vec.FV().NumPy()
+        Theta0Sol[:,i] = Direction
 
 
 #Calculate the N0 tensor
@@ -264,11 +265,11 @@ def FullSweepMulti(Object,Order,alpha,inorout,mur,sig,Array,CPUs):
         position = int(floor(i/3))
         direction = i-3*position
         if direction==0:
-            Theta1E1Sol[:,position] = OutputNumber.vec.FV().NumPy()
+            Theta1E1Sol[:,position] = OutputNumber
         if direction==1:
-            Theta1E2Sol[:,position] = OutputNumber.vec.FV().NumPy()
+            Theta1E2Sol[:,position] = OutputNumber
         if direction==2:
-            Theta1E3Sol[:,position] = OutputNumber.vec.FV().NumPy()
+            Theta1E3Sol[:,position] = OutputNumber
     
 
 

@@ -24,6 +24,15 @@ PODTensors = np.genfromtxt("Data/PODTensors.csv",delimiter=",",dtype=complex)
 #Error Bars
 Errors = np.genfromtxt("Data/ErrorBars.csv",delimiter=",")
 
+#Eddy-current breakdown line
+try:
+    f = open("Data/Eddy-current_breakdown.txt","r")
+    exec(f.readline())
+    f.close()
+    omega = float(omega)
+except:
+    omega = False
+
 
 
 #remove the rows so that the array represents an upper triangular matrix
@@ -35,8 +44,8 @@ Errors = np.concatenate([np.concatenate([Errors[:,:3],Errors[:,4:6]],axis=1),Err
 savename = "Graphs/"
 
 #plot the graphs
-Show = PODEigPlotter(savename,Frequencies,PODFrequencies,Eigenvalues,PODEigenvalues)
-Show = PODErrorPlotter(savename,Frequencies,PODFrequencies,Tensors,PODTensors,Errors)
+Show = PODEigPlotter(savename,Frequencies,PODFrequencies,Eigenvalues,PODEigenvalues,omega)
+Show = PODErrorPlotter(savename,Frequencies,PODFrequencies,Tensors,PODTensors,Errors,omega)
 
 #plot the graph if required
 if Show==True:

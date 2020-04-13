@@ -8,6 +8,7 @@
 #Importing
 import os
 import sys
+from math import floor, log10
 import numpy as np
 from shutil import copyfile
 
@@ -68,7 +69,7 @@ def DictionaryList(Dictionary,Float):
 
 
 
-def SingleSave(Geometry, Omega, MPT, EigenValues, N0, elements, alpha, Order, MeshSize, mur, sig):
+def SingleSave(Geometry, Omega, MPT, EigenValues, N0, elements, alpha, Order, MeshSize, mur, sig, EddyCurrentTest):
     
     #Find how the user wants the data to be saved
     FolderStructure = SaverSettings()
@@ -91,12 +92,16 @@ def SingleSave(Geometry, Omega, MPT, EigenValues, N0, elements, alpha, Order, Me
     np.savetxt("Results/"+sweepname+"/Data/MPT.csv",MPT, delimiter=",")
     np.savetxt("Results/"+sweepname+"/Data/Eigenvalues.csv",EigenValues, delimiter=",")
     np.savetxt("Results/"+sweepname+"/Data/N0.csv",N0, delimiter=",")
+    if isinstance(EddyCurrentTest, float):
+        f = open('Results/'+sweepname+'/Data/Eddy-current_breakdown.txt','w+')
+        f.write('omega = '+str(round(EddyCurrentTest))[:-2])
+        f.close()
     
     return
 
 
 
-def PODSave(Geometry, Array, TensorArray, EigenValues, N0, PODTensors, PODEigenValues, PODArray, PODTol, elements, alpha, Order, MeshSize, mur, sig, ErrorTensors):
+def PODSave(Geometry, Array, TensorArray, EigenValues, N0, PODTensors, PODEigenValues, PODArray, PODTol, elements, alpha, Order, MeshSize, mur, sig, ErrorTensors, EddyCurrentTest):
     
     #Find how the user wants the data to be saved
     FolderStructure = SaverSettings()
@@ -130,6 +135,10 @@ def PODSave(Geometry, Array, TensorArray, EigenValues, N0, PODTensors, PODEigenV
     np.savetxt("Results/"+sweepname+"/Data/N0.csv",N0, delimiter=",")
     np.savetxt("Results/"+sweepname+"/Data/Tensors.csv",TensorArray, delimiter=",")
     np.savetxt("Results/"+sweepname+"/Data/PODTensors.csv",PODTensors, delimiter=",")
+    if isinstance(EddyCurrentTest, float):
+        f = open('Results/'+sweepname+'/Data/Eddy-current_breakdown.txt','w+')
+        f.write('omega = '+str(round(EddyCurrentTest))[:-2])
+        f.close()
     
     
     #Format the tensor arrays so they can be plotted
@@ -149,13 +158,13 @@ def PODSave(Geometry, Array, TensorArray, EigenValues, N0, PODTensors, PODEigenV
     savename = "Results/"+sweepname+"/Graphs/"
     
     #Plot the graphs
-    Show = PODEigPlotter(savename,Array,PODArray,EigenValues,PODEigenValues)
+    Show = PODEigPlotter(savename,Array,PODArray,EigenValues,PODEigenValues,EddyCurrentTest)
     
     try:
         if ErrorTensors==False:
-            Show = PODTensorPlotter(savename,Array,PODArray,PlottingTensorArray,PlottingPODTensors)
+            Show = PODTensorPlotter(savename,Array,PODArray,PlottingTensorArray,PlottingPODTensors,EddyCurrentTest)
     except:
-        Show = PODErrorPlotter(savename,Array,PODArray,PlottingTensorArray,PlottingPODTensors,ErrorTensors)
+        Show = PODErrorPlotter(savename,Array,PODArray,PlottingTensorArray,PlottingPODTensors,ErrorTensors,EddyCurrentTest)
         
         #Change the format of the error bars to the format of the Tensors
         Errors = np.zeros([Points,9])
@@ -176,7 +185,7 @@ def PODSave(Geometry, Array, TensorArray, EigenValues, N0, PODTensors, PODEigenV
     return
 
 
-def FullSave(Geometry, Array, TensorArray, EigenValues, N0, Pod, PODArray, PODTol, elements, alpha, Order, MeshSize, mur, sig, ErrorTensors):
+def FullSave(Geometry, Array, TensorArray, EigenValues, N0, Pod, PODArray, PODTol, elements, alpha, Order, MeshSize, mur, sig, ErrorTensors, EddyCurrentTest):
     
     #Find how the user wants the data to be saved
     FolderStructure = SaverSettings()
@@ -212,7 +221,10 @@ def FullSave(Geometry, Array, TensorArray, EigenValues, N0, Pod, PODArray, PODTo
     np.savetxt("Results/"+sweepname+"/Data/Tensors.csv",TensorArray, delimiter=",")
     if Pod==True:
         np.savetxt("Results/"+sweepname+"/Data/PODFrequencies.csv",PODArray, delimiter=",")
-    
+    if isinstance(EddyCurrentTest, float):
+        f = open('Results/'+sweepname+'/Data/Eddy-current_breakdown.txt','w+')
+        f.write('omega = '+str(round(EddyCurrentTest))[:-2])
+        f.close()
     
     #Format the tensor arrays so they can be plotted
     PlottingTensorArray = np.zeros([Points,6],dtype=complex)
@@ -228,24 +240,29 @@ def FullSave(Geometry, Array, TensorArray, EigenValues, N0, Pod, PODArray, PODTo
     savename = "Results/"+sweepname+"/Graphs/"
     
     #Plot the graphs
-    Show = EigPlotter(savename,Array,EigenValues)
-    try:
-        if ErrorTensors==False:
-            Show = TensorPlotter(savename,Array,PlottingTensorArray)
-    except:
-        Show = ErrorPlotter(savename,Array,PlottingTensorArray,ErrorTensors)
-        #Change the format of the error bars to the format of the Tensors
-        Errors = np.zeros([Points,9])
-        Errors[:,0] = ErrorTensors[:,0]
-        Errors[:,1] = ErrorTensors[:,3]
-        Errors[:,2] = ErrorTensors[:,4]
-        Errors[:,3] = ErrorTensors[:,3]
-        Errors[:,4] = ErrorTensors[:,1]
-        Errors[:,5] = ErrorTensors[:,5]
-        Errors[:,6] = ErrorTensors[:,4]
-        Errors[:,7] = ErrorTensors[:,5]
-        Errors[:,8] = ErrorTensors[:,2]
-        np.savetxt("Results/"+sweepname+"/Data/ErrorBars.csv",Errors, delimiter=",")
+    Show = EigPlotter(savename,Array,EigenValues,EddyCurrentTest)
+    
+    if Pod == True:
+        try:
+            if ErrorTensors==False:
+                Show = TensorPlotter(savename,Array,PlottingTensorArray,EddyCurrentTest)
+        except:
+            Show = ErrorPlotter(savename,Array,PlottingTensorArray,ErrorTensors,EddyCurrentTest)
+            #Change the format of the error bars to the format of the Tensors
+            Errors = np.zeros([Points,9])
+            Errors[:,0] = ErrorTensors[:,0]
+            Errors[:,1] = ErrorTensors[:,3]
+            Errors[:,2] = ErrorTensors[:,4]
+            Errors[:,3] = ErrorTensors[:,3]
+            Errors[:,4] = ErrorTensors[:,1]
+            Errors[:,5] = ErrorTensors[:,5]
+            Errors[:,6] = ErrorTensors[:,4]
+            Errors[:,7] = ErrorTensors[:,5]
+            Errors[:,8] = ErrorTensors[:,2]
+            np.savetxt("Results/"+sweepname+"/Data/ErrorBars.csv",Errors, delimiter=",")
+    else:
+        Show = TensorPlotter(savename,Array,PlottingTensorArray,EddyCurrentTest)
+    
     #plot the graph if required
     if Show==True:
         plt.show()
@@ -253,7 +270,7 @@ def FullSave(Geometry, Array, TensorArray, EigenValues, N0, Pod, PODArray, PODTo
     return
     
 
-def FolderMaker(Geometry, Single, Array, Omega, Pod, PlotPod, PODArray, PODTol, alpha, Order, MeshSize, mur, sig, ErrorTensors):
+def FolderMaker(Geometry, Single, Array, Omega, Pod, PlotPod, PODArray, PODTol, alpha, Order, MeshSize, mur, sig, ErrorTensors, VTK):
     
     #Find how the user wants the data saved
     FolderStructure = SaverSettings()
@@ -309,6 +326,16 @@ def FolderMaker(Geometry, Single, Array, Omega, Pod, PlotPod, PODArray, PODTol, 
             os.makedirs("Results/"+sweepname+"/"+folder)
         except:
             pass
+    
+    #Create the folders for the VTK output if required
+    if VTK == True and Single == True:
+        try:
+            os.makedirs("Results/vtk_output/"+objname+"/om_"+stromega)
+        except:
+            pass
+        
+        #Copy the .geo file to the folder
+        copyfile("GeoFiles/"+Geometry,"Results/vtk_output/"+objname+"/om_"+stromega+"/"+Geometry)
     
     #Copy the files required to be able to edit the graphs
     if Single!=True:

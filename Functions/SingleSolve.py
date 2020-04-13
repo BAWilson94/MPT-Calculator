@@ -4,7 +4,7 @@
 import os
 import sys
 import time
-import multiprocessing
+import multiprocessing_on_dill as multiprocessing
 
 import cmath
 import numpy as np
@@ -14,12 +14,13 @@ from ngsolve import *
 
 sys.path.insert(0,"Functions")
 from MPTFunctions import *
+from ResultsFunctions import FtoS
 sys.path.insert(0,"Settings")
 from Settings import SolverParameters
 
 
 
-def SingleFrequency(Object,Order,alpha,inorout,mur,sig,Omega,CPUs):
+def SingleFrequency(Object,Order,alpha,inorout,mur,sig,Omega,CPUs,VTK):
     Object = Object[:-4]+".vol"
     #Set up the Solver Parameters
     Solver,epsi,Maxsteps,Tolerance = SolverParameters()
@@ -131,13 +132,26 @@ def SingleFrequency(Object,Order,alpha,inorout,mur,sig,Omega,CPUs):
         Output = pool.starmap(Theta1, Runlist)
     print(' solved theta1 problem       ')
     
+    
+    
+    #Create the list for exporting
+    Sols = []
+    Sols.append(dom_nrs_metal)
     #Unpack the outputs
     for i, OutputNumber in enumerate(Output):
         Theta1Sol[:,i] = OutputNumber.vec.FV().NumPy()
+        Sols.append((OutputNumber*1j*Omega*sigma).real)
+        Sols.append((OutputNumber*1j*Omega*sigma).imag)
+    
+    if VTK == True:
+        savename = "Results/vtk_output/"+Object[:-4]+"/om_"+FtoS(Omega)+"/"
+        vtk = VTKOutput(ma=mesh, coefs=Sols, names = ["Object","E1real","E1imag","E2real","E2imag","E3real","E3imag"],filename=savename+Object[:-4],subdivision=3)
+        vtk.Do()
+    
+
     
 #########################################################################
-#Calculate the tensors
-#Calculate the tensors and eigenvalues which will be used in the sweep
+#Calculate the tensor and eigenvalues
 
     #Create the inputs for the calculation of the tensors
     print(' calculating the tensor  ', end='\r')
