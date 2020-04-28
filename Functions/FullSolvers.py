@@ -5,6 +5,7 @@
 import os
 import sys
 import time
+import math
 import multiprocessing_on_dill as multiprocessing
 
 import cmath
@@ -52,10 +53,6 @@ def FullSweep(Object,Order,alpha,inorout,mur,sig,Array,BigProblem):
     N0=np.zeros([3,3])
     R=np.zeros([3,3])
     I=np.zeros([3,3])
-    TensorArray=np.zeros([NumberofFrequencies,9], dtype=complex)
-    RealEigenvalues = np.zeros([NumberofFrequencies,3])
-    ImaginaryEigenvalues = np.zeros([NumberofFrequencies,3])
-    Eigenvalues = np.zeros([NumberofFrequencies,3], dtype=complex)
 
 
 
@@ -112,29 +109,12 @@ def FullSweep(Object,Order,alpha,inorout,mur,sig,Array,BigProblem):
     #Define the vectors for the right hand side
     xivec = [ CoefficientFunction( (0,-z,y) ), CoefficientFunction( (z,0,-x) ), CoefficientFunction( (-y,x,0) ) ]
     
-    #Setup the grid functions and arrays which will be used to store the solution vectors
-    Theta1i = GridFunction(fes2)
-    Theta1j = GridFunction(fes2)
-    Theta1Sol = np.zeros([ndof2,3],dtype=complex)
+    #Solve the problem
+    TensorArray, EigenValues = Theta1_Sweep(Array,mesh,fes,fes2,Theta0Sol,xivec,alpha,sigma,mu,inout,Tolerance,Maxsteps,epsi,Solver,N0,NumberofFrequencies,False,True,False,False)
     
-    #Sweep through all points
-    for i,Omega in enumerate(Array):
-        nu = Omega*Mu0*(alpha**2)
-        
-        #Solve for each direction
-        Theta1Sol[:,0] = Theta1(fes,fes2,Theta0Sol[:,0],xivec[0],Order,alpha,nu,sigma,mu,inout,Tolerance,Maxsteps,epsi,Omega,i+1,NumberofFrequencies,Solver)
-        Theta1Sol[:,1] = Theta1(fes,fes2,Theta0Sol[:,1],xivec[1],Order,alpha,nu,sigma,mu,inout,Tolerance,Maxsteps,epsi,Omega,i+1,NumberofFrequencies,Solver)
-        Theta1Sol[:,2] = Theta1(fes,fes2,Theta0Sol[:,2],xivec[2],Order,alpha,nu,sigma,mu,inout,Tolerance,Maxsteps,epsi,Omega,i+1,NumberofFrequencies,Solver)
-        
-        #Calculate the tensors
-        R,I = MPTCalculator(mesh,fes,fes2,Theta1Sol[:,0],Theta1Sol[:,1],Theta1Sol[:,2],Theta0Sol,xivec,alpha,mu,sigma,inout,nu,"No Print",NumberofFrequencies)
-        TensorArray[i,:] = (N0+R+1j*I).flatten()
-        RealEigenvalues[i,:] = np.sort(np.linalg.eigvals(N0+R))
-        ImaginaryEigenvalues[i,:] = np.sort(np.linalg.eigvals(I))
     print(' solved theta1 problems     ')
     print(' frequency sweep complete')
-    EigenValues=RealEigenvalues+1j*ImaginaryEigenvalues
-
+    
     return TensorArray, EigenValues, N0, numelements
 
 
@@ -172,7 +152,7 @@ def FullSweepMulti(Object,Order,alpha,inorout,mur,sig,Array,CPUs,BigProblem):
     TensorArray=np.zeros([NumberofFrequencies,9], dtype=complex)
     RealEigenvalues = np.zeros([NumberofFrequencies,3])
     ImaginaryEigenvalues = np.zeros([NumberofFrequencies,3])
-    Eigenvalues = np.zeros([NumberofFrequencies,3], dtype=complex)
+    EigenValues = np.zeros([NumberofFrequencies,3], dtype=complex)
 
 
 
@@ -195,15 +175,16 @@ def FullSweepMulti(Object,Order,alpha,inorout,mur,sig,Array,CPUs,BigProblem):
     Theta0Sol = np.zeros([ndof,3])
     
     #Setup the inputs for the functions to run
+    Theta0CPUs = min(3,multiprocessing.cpu_count(),CPUs)
     Runlist = []
     for i in range(3):
-        if CPUs<3:
+        if Theta0CPUs<3:
             NewInput = (fes,Order,alpha,mu,inout,evec[i],Tolerance,Maxsteps,epsi,i+1,Solver)
         else:
             NewInput = (fes,Order,alpha,mu,inout,evec[i],Tolerance,Maxsteps,epsi,"No Print",Solver)
         Runlist.append(NewInput)
     #Run on the multiple cores
-    with multiprocessing.Pool(CPUs) as pool:
+    with multiprocessing.Pool(Theta0CPUs) as pool:
         Output = pool.starmap(Theta0, Runlist)
     print(' solved theta0 problems    ')
     
@@ -238,64 +219,45 @@ def FullSweepMulti(Object,Order,alpha,inorout,mur,sig,Array,CPUs,BigProblem):
     #Define the vectors for the right hand side
     xivec = [ CoefficientFunction( (0,-z,y) ), CoefficientFunction( (z,0,-x) ), CoefficientFunction( (-y,x,0) ) ]
     
-    #Setup the grid functions and arrays which will be used to store the solution vectors
-    Theta1i = GridFunction(fes2)
-    Theta1j = GridFunction(fes2)
+    #Work out where to send each frequency
+    Theta1_CPUs = min(NumberofFrequencies,multiprocessing.cpu_count(),CPUs)
+    Core_Distribution = []
+    Count_Distribution = []
+    for i in range(Theta1_CPUs):
+        Core_Distribution.append([])
+        Count_Distribution.append([])
     
-    Theta1E1Sol = np.zeros([ndof2,NumberofFrequencies],dtype=complex)
-    Theta1E2Sol = np.zeros([ndof2,NumberofFrequencies],dtype=complex)
-    Theta1E3Sol = np.zeros([ndof2,NumberofFrequencies],dtype=complex)
+    #Distribute between the cores
+    CoreNumber = 0
+    count = 1
+    for i,Omega in enumerate(Array):
+        Core_Distribution[CoreNumber].append(Omega)
+        Count_Distribution[CoreNumber].append(i)
+        if CoreNumber == CPUs-1 and count == 1:
+            count = -1
+        elif CoreNumber == 0 and count == -1:
+            count = 1
+        else:
+            CoreNumber +=count
     
-    #Setup the inputs for the functions to run
+    #Create the inputs
     Runlist = []
     manager = multiprocessing.Manager()
-    counter = manager.Value('i', 1)
-    for j,Omega in enumerate(Array):
-        nu = Omega*Mu0*(alpha**2)
-        for i in range(3):
-            NewInput = (fes,fes2,Theta0Sol[:,i],xivec[i],Order,alpha,nu,sigma,mu,inout,Tolerance,Maxsteps,epsi,Omega,counter,len(Array),Solver)
-            Runlist.append(NewInput)
+    counter = manager.Value('i', 0)
+    for i in range(Theta1_CPUs):
+        Runlist.append((Core_Distribution[i],mesh,fes,fes2,Theta0Sol,xivec,alpha,sigma,mu,inout,Tolerance,Maxsteps,epsi,Solver,N0,NumberofFrequencies,False,True,counter,False))
     
     #Run on the multiple cores
-    with multiprocessing.Pool(CPUs) as pool:
-        Output = pool.starmap(Theta1, Runlist)
-    print(' solved theta1 problems    ')
-    #Unpack the outputs
-    for i, OutputNumber in enumerate(Output):
-        position = int(floor(i/3))
-        direction = i-3*position
-        if direction==0:
-            Theta1E1Sol[:,position] = OutputNumber
-        if direction==1:
-            Theta1E2Sol[:,position] = OutputNumber
-        if direction==2:
-            Theta1E3Sol[:,position] = OutputNumber
+    with multiprocessing.Pool(Theta1_CPUs) as pool:
+        Outputs = pool.starmap(Theta1_Sweep, Runlist)
     
-
-
-#########################################################################
-#Calculate the tensors
-#Calculate the tensors and eigenvalues which will be used in the sweep
+    #Unpack the results
+    for i,Output in enumerate(Outputs):
+        for j,Num in enumerate(Count_Distribution[i]):
+            TensorArray[Num,:] = Output[0][j]
+            EigenValues[Num,:] = Output[1][j]
     
-    #Create the inputs for the calculation of the tensors
-    Runlist = []
-    counter = manager.Value('i', 0)
-    for i,Omega in enumerate(Array):
-        nu = Omega*Mu0*(alpha**2)
-        NewInput = (mesh,fes,fes2,Theta1E1Sol[:,i],Theta1E2Sol[:,i],Theta1E3Sol[:,i],Theta0Sol,xivec,alpha,mu,sigma,inout,nu,counter,NumberofFrequencies)
-        Runlist.append(NewInput)
-    
-    #Run in parallel
-    with multiprocessing.Pool(CPUs) as pool:
-        Output = pool.starmap(MPTCalculator, Runlist)
-    print(' calculated tensors             ')
-    print(' frequency sweep complete')    
-    #Unpack the outputs
-    for i, OutputNumber in enumerate(Output):
-        TensorArray[i,:]=(N0+OutputNumber[0]+1j*OutputNumber[1]).flatten()
-        RealEigenvalues[i,:]=np.sort(np.linalg.eigvals(N0+OutputNumber[0]))
-        ImaginaryEigenvalues[i,:]=np.sort(np.linalg.eigvals(OutputNumber[1]))
-    
-    EigenValues=RealEigenvalues+1j*ImaginaryEigenvalues
+    print("Frequency Sweep complete")
     
     return TensorArray, EigenValues, N0, numelements
+    

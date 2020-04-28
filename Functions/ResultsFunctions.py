@@ -11,6 +11,7 @@ import sys
 from math import floor, log10
 import numpy as np
 from shutil import copyfile
+from zipfile import *
 
 import netgen.meshing as ngmeshing
 from ngsolve import Mesh
@@ -352,5 +353,13 @@ def FolderMaker(Geometry, Single, Array, Omega, Pod, PlotPod, PODArray, PODTol, 
     copyfile("GeoFiles/"+Geometry,"Results/"+sweepname+"/Input_files/"+Geometry)
     copyfile("Settings/Settings.py","Results/"+sweepname+"/Input_files/Settings.py")
     copyfile("main.py","Results/"+sweepname+"/Input_files/main.py")
+    
+    #Create a compressed version of the .vol file
+    os.chdir('VolFiles')
+    zipObj = ZipFile(objname+'.zip','w',ZIP_DEFLATED)
+    zipObj.write(Object)
+    zipObj.close()
+    os.replace(objname+'.zip','../Results/'+sweepname+'/Input_files/'+objname+'.zip')
+    os.chdir('..')
     
     return

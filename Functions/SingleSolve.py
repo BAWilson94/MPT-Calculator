@@ -20,7 +20,7 @@ from Settings import SolverParameters
 
 
 
-def SingleFrequency(Object,Order,alpha,inorout,mur,sig,Omega,CPUs,VTK):
+def SingleFrequency(Object,Order,alpha,inorout,mur,sig,Omega,CPUs,VTK,Refine):
     Object = Object[:-4]+".vol"
     #Set up the Solver Parameters
     Solver,epsi,Maxsteps,Tolerance = SolverParameters()
@@ -85,7 +85,7 @@ def SingleFrequency(Object,Order,alpha,inorout,mur,sig,Omega,CPUs,VTK):
 
     #Unpack the outputs
     for i,Direction in enumerate(Output):
-        Theta0Sol[:,i] = Direction.vec.FV().NumPy()
+        Theta0Sol[:,i] = Direction
 
 
 #Calculate the N0 tensor
@@ -133,20 +133,27 @@ def SingleFrequency(Object,Order,alpha,inorout,mur,sig,Omega,CPUs,VTK):
     print(' solved theta1 problem       ')
     
     
-    
-    #Create the list for exporting
-    Sols = []
-    Sols.append(dom_nrs_metal)
     #Unpack the outputs
     for i, OutputNumber in enumerate(Output):
-        Theta1Sol[:,i] = OutputNumber.vec.FV().NumPy()
-        Sols.append((OutputNumber*1j*Omega*sigma).real)
-        Sols.append((OutputNumber*1j*Omega*sigma).imag)
+        Theta1Sol[:,i] = OutputNumber
     
+    #Create the VTK output if required
     if VTK == True:
+        print(' creating vtk output', end='\r')
+        Theta = GridFunction(fes2)
+        Sols = []
+        Sols.append(dom_nrs_metal)
+        for i, OutputNumber in enumerate(Output):
+            Theta.vec.FV().NumPy()[:] = OutputNumber
+            Sols.append((Theta*1j*Omega*sigma).real)
+            Sols.append((Theta*1j*Omega*sigma).imag)
         savename = "Results/vtk_output/"+Object[:-4]+"/om_"+FtoS(Omega)+"/"
-        vtk = VTKOutput(ma=mesh, coefs=Sols, names = ["Object","E1real","E1imag","E2real","E2imag","E3real","E3imag"],filename=savename+Object[:-4],subdivision=3)
+        if Refine == True:
+            vtk = VTKOutput(ma=mesh, coefs=Sols, names = ["Object","E1real","E1imag","E2real","E2imag","E3real","E3imag"],filename=savename+Object[:-4],subdivision=3)
+        else:
+            vtk = VTKOutput(ma=mesh, coefs=Sols, names = ["Object","E1real","E1imag","E2real","E2imag","E3real","E3imag"],filename=savename+Object[:-4],subdivision=0)
         vtk.Do()
+        print(' vtk output created     ')
     
 
     

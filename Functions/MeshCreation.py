@@ -24,7 +24,6 @@ def Meshmaker(Geometry,Mesh):
     try:
         subprocess.call(['netgen','-geofile=GeoFiles/'+Geometry,'-meshfile=VolFiles/'+objname+'.vol',Meshsizing,'-meshsizefile='+objname+'.msz','-batchmode'])
     except:
-        print('oops')
         subprocess.call(['netgen','-geofile=GeoFiles/'+Geometry,'-meshfile=VolFiles/'+objname+'.vol',Meshsizing,'-batchmode'])
     return
 
@@ -36,7 +35,7 @@ def Meshmaker(Geometry,Mesh):
 #        -a dictionary of the relative permeabilities for the materials
 #        -a dictionary of the conductivities for the materials
 #        -a dictionary of which materials are considered to be free space
-def VolMatUpdater(Geometry):
+def VolMatUpdater(Geometry,OldMesh):
     #Remove the .geo part of the file extention
     objname=Geometry[:-4]
     
@@ -135,7 +134,8 @@ def VolMatUpdater(Geometry):
         else:
             inout.append(1)
     f.close()
-
+    
+    
     
     
     #extract the number of boundaries and the outer boundaries
@@ -165,63 +165,62 @@ def VolMatUpdater(Geometry):
             maxbound=int(segline[2])
     f.close()
     
-    
-    
-    #Create the new lines which are to be added to the .vol file
-    #define how many regions there are
-    materials=len(orderedmatlist)
-    #Create the lines to be written in as a list
-    #materials
-    newlines=['materials\n']
-    newlines.append(str(materials)+'\n')
-    for i in range(materials):
-        newlines.append(str(i+1)+' '+orderedmatlist[i]+'\n')
-    newlines.append('\n')
-    newlines.append('\n')
-    #bcnames
-    newlines.append('bcnames\n')
-    newlines.append(str(maxbound)+'\n')
-    for i in range(maxbound):
-        if i+1<10:
-            if i+1 in edgelist:
-                newlines.append(str(i+1)+'   outer\n')
+    if OldMesh == False:
+        #Create the new lines which are to be added to the .vol file
+        #define how many regions there are
+        materials=len(orderedmatlist)
+        #Create the lines to be written in as a list
+        #materials
+        newlines=['materials\n']
+        newlines.append(str(materials)+'\n')
+        for i in range(materials):
+            newlines.append(str(i+1)+' '+orderedmatlist[i]+'\n')
+        newlines.append('\n')
+        newlines.append('\n')
+        #bcnames
+        newlines.append('bcnames\n')
+        newlines.append(str(maxbound)+'\n')
+        for i in range(maxbound):
+            if i+1<10:
+                if i+1 in edgelist:
+                    newlines.append(str(i+1)+'   outer\n')
+                else:
+                    newlines.append(str(i+1)+'   default\n')
+            elif i+1<100:
+                if i+1 in edgelist:
+                    newlines.append(str(i+1)+'  outer\n')
+                else:
+                    newlines.append(str(i+1)+'  default\n')
             else:
-                newlines.append(str(i+1)+'   default\n')
-        elif i+1<100:
-            if i+1 in edgelist:
-                newlines.append(str(i+1)+'  outer\n')
-            else:
-                newlines.append(str(i+1)+'  default\n')
-        else:
-            if i+1 in edgelist:
-                newlines.append(str(i+1)+' outer\n')
-            else:
-                newlines.append(str(i+1)+' default\n')
-    newlines.append('\n')
-    newlines.append('\n')
+                if i+1 in edgelist:
+                    newlines.append(str(i+1)+' outer\n')
+                else:
+                    newlines.append(str(i+1)+' default\n')
+        newlines.append('\n')
+        newlines.append('\n')
             
 
 
-    #Find where the lines should be added
-    f=open("VolFiles/"+objname+".vol","r")
-    f1 = f.readlines()
-    #Find the line where it says how many surface elements there are
-    for line in f1:
-        if line[:-1]=="points":
-            linenum=f1.index(line)
-            break
-    pointnumstr=f1[linenum+1]
-    pointnum=int(pointnumstr)
-    firsthalf=f1[:linenum+pointnum+2]
-    secondhalf=f1[linenum+pointnum+2:]
+        #Find where the lines should be added
+        f=open("VolFiles/"+objname+".vol","r")
+        f1 = f.readlines()
+        #Find the line where it says how many surface elements there are
+        for line in f1:
+            if line[:-1]=="points":
+                linenum=f1.index(line)
+                break
+        pointnumstr=f1[linenum+1]
+        pointnum=int(pointnumstr)
+        firsthalf=f1[:linenum+pointnum+2]
+        secondhalf=f1[linenum+pointnum+2:]
     
-    #Stick the lists together
-    newfile=firsthalf+newlines+secondhalf
-    f.close()
-    f=open("VolFiles/"+objname+".vol","w")
-    for line in newfile:
-        f.write(line)
-    f.close()
+        #Stick the lists together
+        newfile=firsthalf+newlines+secondhalf
+        f.close()
+        f=open("VolFiles/"+objname+".vol","w")
+        for line in newfile:
+            f.write(line)
+        f.close()
     
     inorout=dict(zip(matlist,inout))
     mur=dict(zip(matlist,murlist))

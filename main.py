@@ -22,13 +22,13 @@ alpha = 0.01
 
 #About the mesh
 #How fine should the mesh be
-MeshSize = 2
+MeshSize = 1
 #(int 1-5) this defines how fine the mesh should be for regions that do
 #not have maxh values defined for them in the .geo file (1=verycoarse,
 #5=veryfine)
 
 #The order of the elements in the mesh
-Order = 3
+Order = 0
 #(int) this defines the order of each of the elements in the mesh 
 
 
@@ -46,7 +46,7 @@ Points = 81
 #I only require a single frequency
 Single = False
 #(boolean) True if single frequency is required
-Omega = 100000
+Omega = 133.5
 #(float) the frequency to be solved if Single = True
 
 
@@ -88,21 +88,32 @@ from FullSolvers import *
 from PODSolvers import *
 from ResultsFunctions import *
 from Checkvalid import *
-#import time
 
 if __name__ == '__main__':
-    #Start_time = time.time()
-    #Meshing
-    #Create the mesh
-    Meshmaker(Geometry,MeshSize)
-
+    #Load the default settings
+    CPUs,BigProblem,PODPoints,PODTol,OldMesh = DefaultSettings()
+    
+    if OldMesh == False:
+        #Create the mesh
+        Meshmaker(Geometry,MeshSize)
+    else:
+        #Check whether to add the material information to the .vol file
+        try:
+            Materials,mur,sig,inorout = VolMatUpdater(Geometry,OldMesh)
+            ngmesh = ngmeshing.Mesh(dim=3)
+            ngmesh.Load("VolFiles/"+Geometry[:-4]+".vol")
+            mesh = Mesh("VolFiles/"+Geometry[:-4]+".vol")
+            mu_coef = [ mur[mat] for mat in mesh.GetMaterials() ]
+        except:
+            #Force update to the .vol file
+            OldMesh = False
+    
     #Update the .vol file and create the material dictionaries
-    Materials,mur,sig,inorout = VolMatUpdater(Geometry)
+    Materials,mur,sig,inorout = VolMatUpdater(Geometry,OldMesh)
 
     #create the array of points to be used in the sweep
     Array = np.logspace(Start,Finish,Points)
-    CPUs,BigProblem,PODPoints,PODTol = DefaultSettings()
-    PlotPod, PODErrorBars, EddyCurrentTest, vtk_output = AdditionalOutputs()
+    PlotPod, PODErrorBars, EddyCurrentTest, vtk_output, Refine = AdditionalOutputs()
     SavePOD = False
     if PODErrorBars!=True:
         ErrorTensors=False
@@ -119,15 +130,11 @@ if __name__ == '__main__':
     #Check the validity of the eddy-current model for the object
     if EddyCurrentTest == True:
         EddyCurrentTest = Checkvalid(Geometry,Order,alpha,inorout,mur,sig)
-    
-    if MultiProcessing==False:
-        CPUs=1
-        MultiProcessing=True
 
     if Single==True:
         if MultiProcessing!=True:
             CPUs = 1
-        MPT, EigenValues, N0, elements = SingleFrequency(Geometry,Order,alpha,inorout,mur,sig,Omega,CPUs,vtk_output)
+        MPT, EigenValues, N0, elements = SingleFrequency(Geometry,Order,alpha,inorout,mur,sig,Omega,CPUs,vtk_output,Refine)
     else:
         if Pod==True:
             if MultiProcessing==True:
@@ -158,7 +165,6 @@ if __name__ == '__main__':
             else:
                 TensorArray, EigenValues, N0, elements = FullSweep(Geometry,Order,alpha,inorout,mur,sig,Array,BigProblem)
     
-    #print(time.time()-Start_time)
 
     #Plotting and saving
     if Single==True:

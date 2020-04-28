@@ -22,7 +22,12 @@ def DefaultSettings():
     PODTol = 10**-4
     #(float)
     
-    return CPUs,BigProblem,PODPoints,PODTol
+    #Use an old mesh
+    OldMesh = False
+    #(boolean) Note that this still requires the relavent .geo file to obtain
+    #information about the materials in the mesh
+    
+    return CPUs,BigProblem,PODPoints,PODTol,OldMesh
 
 def AdditionalOutputs():
     #Plot the POD points
@@ -31,11 +36,11 @@ def AdditionalOutputs():
     #calculations and will slow down sweep by around 2% for default settings)
     
     #Produce certificate bounds for POD outputs
-    PODErrorBars = False
+    PODErrorBars = True
     #(boolean)
     
     #Test where the eddy-current model breaks for the object
-    EddyCurrentTest = False
+    EddyCurrentTest = True
     #(boolean)
     
     #Produce a vtk outputfile for the eddy-currents (outputs a large file!)
@@ -43,7 +48,13 @@ def AdditionalOutputs():
     #(boolean) do you want to produce a vtk file of the eddy currents in the
     #object (single frequency only)
     
-    return PlotPod, PODErrorBars, EddyCurrentTest, vtk_output
+    #Refine the vtk output (extremely large file!)
+    Refine_vtk = False
+    #(boolean) do you want ngsolve to refine the solution before exporting
+    #to the vtk file (single frequency only)
+    #(not compatable with all NGSolve versions)
+    
+    return PlotPod, PODErrorBars, EddyCurrentTest, vtk_output, Refine_vtk
     
 
 
@@ -68,7 +79,7 @@ def SolverParameters():
     #(string) "bddc"/"local"
     
     #regularisation
-    epsi = 10**-12
+    epsi = 10**-10
     #(float) regularisation to be used in the problem
     
     #Maximum iterations to be used in solving the problem
@@ -78,7 +89,7 @@ def SolverParameters():
     #the local will take more
     
     #Relative tolerance
-    Tolerance = 10**-10
+    Tolerance = 10**-8
     #(float) the amount the redsidual must decrease by relatively to solve
     #the problem
     
