@@ -140,18 +140,31 @@ def SingleFrequency(Object,Order,alpha,inorout,mur,sig,Omega,CPUs,VTK,Refine):
     #Create the VTK output if required
     if VTK == True:
         print(' creating vtk output', end='\r')
-        Theta = GridFunction(fes2)
+        ThetaE1 = GridFunction(fes2)
+        ThetaE2 = GridFunction(fes2)
+        ThetaE3 = GridFunction(fes2)
+        ThetaE1.vec.FV().NumPy()[:] = Output[0]
+        ThetaE2.vec.FV().NumPy()[:] = Output[1]
+        ThetaE3.vec.FV().NumPy()[:] = Output[2]
+        E1Mag = CoefficientFunction(sqrt(InnerProduct(ThetaE1.real,ThetaE1.real)+InnerProduct(ThetaE1.imag,ThetaE1.imag)))
+        E2Mag = CoefficientFunction(sqrt(InnerProduct(ThetaE2.real,ThetaE2.real)+InnerProduct(ThetaE2.imag,ThetaE2.imag)))
+        E3Mag = CoefficientFunction(sqrt(InnerProduct(ThetaE3.real,ThetaE3.real)+InnerProduct(ThetaE3.imag,ThetaE3.imag)))
         Sols = []
         Sols.append(dom_nrs_metal)
-        for i, OutputNumber in enumerate(Output):
-            Theta.vec.FV().NumPy()[:] = OutputNumber
-            Sols.append((Theta*1j*Omega*sigma).real)
-            Sols.append((Theta*1j*Omega*sigma).imag)
+        Sols.append((ThetaE1*1j*Omega*sigma).real)
+        Sols.append((ThetaE1*1j*Omega*sigma).imag)
+        Sols.append((ThetaE2*1j*Omega*sigma).real)
+        Sols.append((ThetaE2*1j*Omega*sigma).imag)
+        Sols.append((ThetaE3*1j*Omega*sigma).real)
+        Sols.append((ThetaE3*1j*Omega*sigma).imag)
+        Sols.append(E1Mag*Omega*sigma)
+        Sols.append(E2Mag*Omega*sigma)
+        Sols.append(E3Mag*Omega*sigma)
         savename = "Results/vtk_output/"+Object[:-4]+"/om_"+FtoS(Omega)+"/"
         if Refine == True:
-            vtk = VTKOutput(ma=mesh, coefs=Sols, names = ["Object","E1real","E1imag","E2real","E2imag","E3real","E3imag"],filename=savename+Object[:-4],subdivision=3)
+            vtk = VTKOutput(ma=mesh, coefs=Sols, names = ["Object","E1real","E1imag","E2real","E2imag","E3real","E3imag","E1Mag","E2Mag","E3Mag"],filename=savename+Object[:-4],subdivision=3)
         else:
-            vtk = VTKOutput(ma=mesh, coefs=Sols, names = ["Object","E1real","E1imag","E2real","E2imag","E3real","E3imag"],filename=savename+Object[:-4],subdivision=0)
+            vtk = VTKOutput(ma=mesh, coefs=Sols, names = ["Object","E1real","E1imag","E2real","E2imag","E3real","E3imag","E1Mag","E2Mag","E3Mag"],filename=savename+Object[:-4],subdivision=0)
         vtk.Do()
         print(' vtk output created     ')
     
