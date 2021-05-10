@@ -36,11 +36,11 @@ def AdditionalOutputs():
     #calculations and will slow down sweep by around 2% for default settings)
     
     #Produce certificate bounds for POD outputs
-    PODErrorBars = True
+    PODErrorBars = False
     #(boolean)
     
     #Test where the eddy-current model breaks for the object
-    EddyCurrentTest = True
+    EddyCurrentTest = False
     #(boolean)
     
     #Produce a vtk outputfile for the eddy-currents (outputs a large file!)
