@@ -95,7 +95,7 @@ def SingleSave(Geometry, Omega, MPT, EigenValues, N0, elements, alpha, Order, Me
     np.savetxt("Results/"+sweepname+"/Data/N0.csv",N0, delimiter=",")
     if isinstance(EddyCurrentTest, float):
         f = open('Results/'+sweepname+'/Data/Eddy-current_breakdown.txt','w+')
-        f.write('omega = '+str(round(EddyCurrentTest))[:-2])
+        f.write('omega = '+str(round(EddyCurrentTest)))
         f.close()
     
     return
@@ -138,7 +138,7 @@ def PODSave(Geometry, Array, TensorArray, EigenValues, N0, PODTensors, PODEigenV
     np.savetxt("Results/"+sweepname+"/Data/PODTensors.csv",PODTensors, delimiter=",")
     if isinstance(EddyCurrentTest, float):
         f = open('Results/'+sweepname+'/Data/Eddy-current_breakdown.txt','w+')
-        f.write('omega = '+str(round(EddyCurrentTest))[:-2])
+        f.write('omega = '+str(round(EddyCurrentTest)))
         f.close()
     
     
@@ -224,7 +224,7 @@ def FullSave(Geometry, Array, TensorArray, EigenValues, N0, Pod, PODArray, PODTo
         np.savetxt("Results/"+sweepname+"/Data/PODFrequencies.csv",PODArray, delimiter=",")
     if isinstance(EddyCurrentTest, float):
         f = open('Results/'+sweepname+'/Data/Eddy-current_breakdown.txt','w+')
-        f.write('omega = '+str(round(EddyCurrentTest))[:-2])
+        f.write('omega = '+str(round(EddyCurrentTest)))
         f.close()
     
     #Format the tensor arrays so they can be plotted

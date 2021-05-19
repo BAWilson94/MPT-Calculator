@@ -149,6 +149,6 @@ def Checkvalid(Object,Order,alpha,inorout,mur,sig):
     cond2 = 1/epsilon*sigmamin/C2
     cond = min(cond1,cond2)
 
-    print(" maximum recomeneded frequency is ",str(round(cond/100))[:-2])
+    print(" maximum recomeneded frequency is ",str(round(cond/100)))
     
     return cond/100
