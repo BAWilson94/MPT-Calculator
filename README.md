@@ -50,12 +50,6 @@ export MKL_THREADING_LAYER=sequential
 
 or alternatively edit their .bashrc to include this.
 
-#Known Issues
-There are currently 2 known issues with the MPT-Calculator which we are currently working to resolve.
-
-1) There is an occasional failure whilst running simulations for points in a frequency sweep which is due to an issue with NGSolve. If this happens you need to rerun the sweep.
-
-2) Currently whilst using NGSolve-6.2.1910 there is an issue with producing off diagonal coefficients for the Imaginary Tensor from the reduced order model. This can be fixed by setting ImagTensorFullOrd erCalc = True, which can be found in the file Functions/PODFunctions.py. Please note that this will slow down the simulation slightly.
 
 #Referencing
 
@@ -65,7 +59,9 @@ If you use the tool, please refer to it in your work by citing the references
 
 [5] P. D. Ledger and W. R. B. Lionheart,  An explicit formula for the magnetic polarizability tensor for object characterization, IEEE Trans Geosci Remote Sens., 56(6), 3520-3533, 2018.
 
-[6] B. A. Wilson and P. D. Ledger, Efficient computation of the magnetic polarizabiltiy tensor spectral signature using pod. 2020. https://arxiv.org/abs/2001.07629
+[6] B. A. Wilson and P. D. Ledger, Efficient computation of the magnetic polarizabiltiy tensor spectral signature using pod. International Journal for Numerical Methods in Engineering 122, 1940-1963, 2021.
+
+[7] P.D. Ledger, B.A. Wilson, A.A.S. Amad, W.R.B. Lionheart Identification of meallic objects using spectral MPT signatures: Object characterisation and invariants. International Journal for Numerical Methods in Engineering. Accepted Author Manuscript, 2021. https://onlinelibrary.wiley.com/doi/epdf/10.1002/nme.6688
 
 as well as those of NGSolve:
 
