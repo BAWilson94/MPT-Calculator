@@ -1,10 +1,10 @@
 #MPT-Calculator
 
-(* IMPORTANT THIS IS THE OLD VERSION OF MPT-CALCULATOR AND IS NO LONGER UPDATED. PLEASE GO TO 
+IMPORTANT THIS IS THE OLD VERSION OF MPT-CALCULATOR AND IS NO LONGER UPDATED. PLEASE GO TO 
 
 https://github.com/MPT-Calculator/MPT-Calculator
 
-FOR THE CURRENT VERSION AND LATEST UPDATES.*)
+FOR THE CURRENT VERSION AND LATEST UPDATES.
 
 MPT-Calculator is a series of python scripts which calls the NGSolve [1,2,3] high order finite element method (FEM) library 
 
